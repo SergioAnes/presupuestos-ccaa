@@ -97,14 +97,35 @@ export function Deuda({ anio, u }: { anio: number; u: Unidad }) {
     { id: "viva", nombre: `Deuda acumulada a 31 de diciembre`, ayuda: "Según el Banco de España (Protocolo de Déficit Excesivo).", v: porCcaa((c) => DEUDA[c][String(anio)]), fuerte: true },
     { id: "nueva", nombre: "Préstamos nuevos en el año", ayuda: "Capítulo 9 de ingresos (pasivos financieros).", v: porCcaa((c) => e(c)!.ingresos[8]) },
     { id: "devol", nombre: "Devolución de préstamos", ayuda: "Capítulo 9 de gastos.", v: porCcaa((c) => e(c)!.gastos[8]) },
+    { id: "neto", nombre: "Deuda nueva neta del año", ayuda: "Préstamos nuevos menos devolución: lo que aumenta (o baja) la deuda por el presupuesto del año.", v: porCcaa((c) => e(c)!.ingresos[8] - e(c)!.gastos[8]) },
     { id: "int", nombre: "Intereses pagados", ayuda: "Capítulo 3 de gastos (gastos financieros).", v: porCcaa((c) => e(c)!.gastos[2]) },
   ];
+  // Intereses frente a devolución, con la otra comunidad escalada a la misma población (para comparar en millones)
+  const pob = (c: Ccaa) => porHab(1, c, anio) ? 1000 / porHab(1, c, anio) : 0; // habitantes
+  const [C1, C2] = CCAA;
+  const r = pob(C2) / pob(C1);
+  const dInt = e(C2)!.gastos[2] - e(C1)!.gastos[2] * r, dDev = e(C2)!.gastos[8] - e(C1)!.gastos[8] * r;
+  const m = (x: number) => `${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0, useGrouping: "always" } as Intl.NumberFormatOptions).format(Math.abs(x) / 1000)} M€ ${x < 0 ? "menos" : "más"}`;
   return (
     <section className="panel">
       <h2>Deuda</h2>
       <p className="sub">{u === "mill" ? "Millones de €" : "€ por habitante"}, {anio}.</p>
       <div className="leyenda">{CCAA.map((c) => <span key={c}><i style={{ background: COLOR[c] }} />{NOMBRE[c]}</span>)}</div>
       <FilasPar filas={filas} u={u} anio={anio} />
+      <details className="pliegue">
+        <summary>Intereses no es lo mismo que devolver la deuda</summary>
+        <div className="pliegue-c">
+          <p>
+            Los <b>intereses</b> son el coste de la deuda. La <b>devolución</b> (amortización) es pagar el principal de los préstamos que vencen, y casi siempre
+            se hace pidiendo préstamos nuevos: por eso no se cuenta como gasto en servicios. Si se suman las dos cosas, como hace la política «Deuda pública» del
+            presupuesto, la diferencia entre comunidades cambia mucho.
+          </p>
+          <p>
+            En {anio}, con {NOMBRE[C1]} escalada a la población de {NOMBRE[C2]}, {NOMBRE[C2]} paga <b>{m(dInt)}</b> en intereses y <b>{m(dDev)}</b> en devolución
+            de préstamos que {NOMBRE[C1]}. En esta web se compara el gasto con los intereses y sin la devolución.
+          </p>
+        </div>
+      </details>
       <p className="ayuda">Fuentes: <a href={FUENTE.deuda_url}>Banco de España, Boletín Estadístico, cuadro 13.9</a> (deuda) y liquidación de Hacienda (préstamos e intereses).</p>
     </section>
   );

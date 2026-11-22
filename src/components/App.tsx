@@ -774,7 +774,7 @@ export function App() {
         </section>
         </>}
         <footer className="pie">
-          Fuentes: <a href={FUENTE.gasto_url}>Ministerio de Hacienda, liquidación de presupuestos de las CCAA</a> · <a href={FUENTE.poblacion_url}>INE, Estadística Continua de Población</a>.
+          Fuentes: <a href={FUENTE.gasto_url}>Ministerio de Hacienda, liquidación de presupuestos de las CCAA</a> · <a href={FUENTE.sfa_url}>liquidación del sistema de financiación</a> · <a href={FUENTE.deuda_url}>Banco de España</a> · <a href={FUENTE.poblacion_url}>INE, población</a> e IPC.
           Proyecto hermano de <a href="https://sanidad-ccaa.vercel.app/">Sanidad por comunidades</a>.
         </footer>
       </main>
