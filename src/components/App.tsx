@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   ANIOS, AREAS, CAPITULOS, CCAA, COLOR_CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, TRANSF_EJEMPLO, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
-  capitulosMiles, csv, depuracionDe, inusualesEn, notasCompetencia, sfa, singularesDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
+  DEUDA, capitulosMiles, csv, depuracionDe, inusualesEn, notasCompetencia, sfa, singularesDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
   type Ccaa, type Partida, type Unidad,
 } from "@/lib/datos";
 import { Icono } from "./Icono";
@@ -335,13 +335,21 @@ function Barras({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
 }
 
 // ---------- puente: de A a B, política a política ----------
-function Puente({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
+function Puente({ anio, u, abrir, verDeuda }: { anio: number; u: Unidad; abrir: Abrir; verDeuda: () => void }) {
   const [verResto, setVerResto] = useState(false);
+  const [todo, setTodo] = useState(false);
   const un: Unidad = u === "mill" ? "mill" : "hab";
   const val = (c: Ccaa, id: string) => enUnidad(gastoMiles(c, anio, id), un, c, anio);
-  const tot = (c: Ccaa) => enUnidad(resumen(c, anio).gasto, un, c, anio);
+  const conv = (c: Ccaa, miles: number) => enUnidad(miles, un, c, anio);
+  // Con el interruptor, se parte del presupuesto total y se añaden al final, aparte, las partidas que no son gasto en servicios
+  const tot = (c: Ccaa) => conv(c, todo ? resumen(c, anio).total : resumen(c, anio).gasto);
+  const EXTRA: { id: string; nombre: string; ayuda: string; v: (c: Ccaa) => number }[] = [
+    { id: "x-dev", nombre: "Devolución de préstamos", ayuda: "Principal de la deuda que vence; se paga sobre todo con préstamos nuevos.", v: (c) => resumen(c, anio).devolucion },
+    { id: "x-pre", nombre: "Préstamos concedidos y participaciones", ayuda: "Dinero que la comunidad presta o invierte en empresas.", v: (c) => resumen(c, anio).prestamos },
+    { id: "x-ifl", nombre: "Dinero que solo se reparte (IFL y PAC)", ayuda: "Pasa a las entidades locales o a los agricultores; la comunidad no decide en qué se gasta.", v: (c) => resumen(c, anio).intermediacion },
+  ];
   const ratio = poblacion(B, anio) / poblacion(A, anio);
-  const pasos: { id: string; p?: Partida; nombre: string; d: number; nota?: string }[] = [];
+  const pasos: { id: string; p?: Partida; nombre: string; d: number; nota?: string; extra?: boolean }[] = [];
   if (un === "mill") pasos.push({ id: "pob", nombre: `Por tener ${ratio >= 1 ? "más" : "menos"} habitantes`, d: tot(A) * (ratio - 1), nota: `${NOMBRE[A]} × ${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(ratio)} (habitantes de ${NOMBRE[B]} ÷ habitantes de ${NOMBRE[A]})` });
   const difs = POLITICAS.map((p) => ({ id: p.id, p, nombre: p.nombre, d: val(B, p.id) - (un === "mill" ? val(A, p.id) * ratio : val(A, p.id)) }));
   difs.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
@@ -349,6 +357,7 @@ function Puente({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
   const resto = difs.slice(N);
   pasos.push(...difs.slice(0, N).sort((a, b) => b.d - a.d));
   if (resto.length) pasos.push({ id: "resto", nombre: `Resto (${resto.length} políticas)`, d: resto.reduce((s, x) => s + x.d, 0), nota: resto.map((x) => `${x.nombre}: ${fmtDif(x.d, un)}`).join("\n") });
+  if (todo) for (const x of EXTRA) pasos.push({ id: x.id, nombre: x.nombre, nota: x.ayuda, extra: true, d: conv(B, x.v(B)) - (un === "mill" ? conv(A, x.v(A)) * ratio : conv(A, x.v(A))) });
 
   let acc = tot(A);
   const segs = pasos.map((p) => { const a = acc; acc += p.d; return { ...p, desde: Math.min(a, acc), hasta: Math.max(a, acc) }; });
@@ -357,23 +366,24 @@ function Puente({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
   return (
     <div className="puente">
       <div className="pf extremo">
-        <span className="pf-et">{NOMBRE[A]}</span>
+        <span className="pf-et">{NOMBRE[A]}{todo ? ": presupuesto total" : ""}</span>
         <div className="pf-pista"><div className="pf-seg" style={{ left: 0, width: pc(tot(A)), background: COLOR[A] }} /></div>
         <span className="pf-v num">{fmt(tot(A), un)}</span>
       </div>
       {segs.map((s) => (
         <Fragment key={s.id}>
-          <div className="pf">
+          {s.extra && s.id === EXTRA[0].id && <div className="pf-sep">No es gasto en servicios</div>}
+          <div className={`pf${s.extra ? " pf-extra" : ""}`}>
             <span className="pf-et">
               {s.p ? <Nombre p={s.p} abrir={abrir} /> : s.id === "resto" ? (
                 <button className="bf-abrir" aria-expanded={verResto} onClick={() => setVerResto((v) => !v)}>
                   <span className="chev" aria-hidden>{verResto ? "▾" : "▸"}</span>{s.nombre}
                 </button>
               ) : s.nombre} <Marca id={s.id} />
-              {s.id === "pob" && <small className="bf-ayuda">{s.nota}</small>}
+              {(s.id === "pob" || s.extra) && <small className="bf-ayuda">{s.nota}</small>}
             </span>
             <div className="pf-pista">
-              <div className="pf-seg" style={{ left: pc(s.desde), width: `max(2px, ${pc(s.hasta - s.desde)})`, background: s.id === "pob" ? "var(--grey-line)" : s.d >= 0 ? COLOR[B] : COLOR[A] }} />
+              <div className={`pf-seg${s.extra ? " rayado" : ""}`} style={{ left: pc(s.desde), width: `max(2px, ${pc(s.hasta - s.desde)})`, background: s.id === "pob" ? "var(--grey-line)" : s.extra ? undefined : s.d >= 0 ? COLOR[B] : COLOR[A] }} />
             </div>
             <span className="pf-v num">{fmtDif(s.d, un)}</span>
           </div>
@@ -387,7 +397,7 @@ function Puente({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
         </Fragment>
       ))}
       <div className="pf extremo">
-        <span className="pf-et">{NOMBRE[B]}</span>
+        <span className="pf-et">{NOMBRE[B]}{todo ? ": presupuesto total" : ""}</span>
         <div className="pf-pista"><div className="pf-seg" style={{ left: 0, width: pc(tot(B)), background: COLOR[B] }} /></div>
         <span className="pf-v num">{fmt(tot(B), un)}</span>
       </div>
@@ -395,7 +405,19 @@ function Puente({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
         <span><i style={{ background: COLOR[B] }} />{NOMBRE[B]} gasta más</span>
         <span><i style={{ background: COLOR[A] }} />{NOMBRE[A]} gasta más</span>
         {un === "mill" && <span><i style={{ background: "var(--grey-line)" }} />Efecto del tamaño</span>}
+        {todo && <span><i className="rayado" />No es gasto en servicios</span>}
       </div>
+      <label className="pf-todo">
+        <input type="checkbox" checked={todo} onChange={(e) => setTodo(e.target.checked)} />
+        Añadir lo que no es gasto en servicios (devolución de préstamos, préstamos concedidos y dinero que solo se reparte)
+      </label>
+      {todo && (
+        <p className="ayuda">
+          La devolución de préstamos es dinero del presupuesto, pero paga deuda de gastos de años anteriores y se cubre sobre todo con préstamos nuevos.
+          Lo que queda por pagar se ve mejor en la deuda acumulada: {CCAA.filter((c) => DEUDA[c]?.[String(anio)]).map((c) => `${NOMBRE[c]} ${fmt((DEUDA[c][String(anio)] * 1000) / poblacion(c, anio), "hab")}`).join(" y ")} por habitante
+          a 31 de diciembre de {anio}. <button className="enlace" onClick={verDeuda}>Ver la deuda</button>
+        </p>
+      )}
     </div>
   );
 }
@@ -762,7 +784,7 @@ export function App() {
               ? `Millones de €, ${anio}. Del gasto de ${NOMBRE[A]} al de ${NOMBRE[B]}: primero, lo que supone la diferencia de habitantes; después, la diferencia de cada política con la misma población.`
               : `Euros por habitante, ${anio}. Del gasto de ${NOMBRE[A]} al de ${NOMBRE[B]}, sumando la diferencia de cada política.`}
           </p>
-          <Puente anio={anio} u={u} abrir={abrir} />
+          <Puente anio={anio} u={u} abrir={abrir} verDeuda={() => { cambiar({ vista: "ingresos" }); setTimeout(() => document.getElementById("deuda")?.scrollIntoView(), 50); }} />
         </section>
 
         <Cambios abrir={abrir} />

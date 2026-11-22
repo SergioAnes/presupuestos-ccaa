@@ -107,7 +107,7 @@ export function Deuda({ anio, u }: { anio: number; u: Unidad }) {
   const dInt = e(C2)!.gastos[2] - e(C1)!.gastos[2] * r, dDev = e(C2)!.gastos[8] - e(C1)!.gastos[8] * r;
   const m = (x: number) => `${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0, useGrouping: "always" } as Intl.NumberFormatOptions).format(Math.abs(x) / 1000)} M€ ${x < 0 ? "menos" : "más"}`;
   return (
-    <section className="panel">
+    <section className="panel" id="deuda" style={{ scrollMarginTop: 80 }}>
       <h2>Deuda</h2>
       <p className="sub">{u === "mill" ? "Millones de €" : "€ por habitante"}, {anio}.</p>
       <div className="leyenda">{CCAA.map((c) => <span key={c}><i style={{ background: COLOR[c] }} />{NOMBRE[c]}</span>)}</div>

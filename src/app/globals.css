@@ -341,3 +341,11 @@ dialog.ficha::backdrop { background: rgb(10 15 25 / 0.5); }
 .kpi-l b { color: var(--fg); }
 .kpi-pq { justify-self: start; font-size: 0.8rem; margin-top: 4px; }
 .kpi-l b { white-space: nowrap; }
+
+/* Puente: lo que no es gasto en servicios */
+.rayado, .pf-seg.rayado { background: repeating-linear-gradient(135deg, var(--grey-line) 0 4px, transparent 4px 8px) !important; border: 1px solid var(--muted); }
+.leyenda i.rayado { border-radius: 3px; }
+.pf-sep { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+.pf-extra .pf-et { color: var(--muted); }
+.pf-todo { display: flex; gap: 8px; align-items: flex-start; margin-top: 12px; font-size: 0.86rem; cursor: pointer; }
+.pf-todo input { margin-top: 3px; accent-color: var(--accent); }
