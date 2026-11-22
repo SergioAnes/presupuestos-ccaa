@@ -233,3 +233,19 @@ export const QUE_INCLUYE: Record<string, string> = {
 
 /** Criterio fijo de «Diferencias que destacan» (€ por habitante): una comunidad gasta al menos el doble y la diferencia es de 5 € o más. */
 export const DESTACA = { veces: 2, minDif: 5 };
+
+// ---------- ingresos, serie y deuda ----------
+interface Economica { ingresos: number[]; gastos: number[] }
+/** «Ingresos y Gastos por capítulos» (consolidado, sin depurar): derechos y obligaciones reconocidos, miles de euros. */
+export const ECONOMICA = bruto.economica as Record<string, Record<string, Economica>>;
+/** «Serie Consolidados» desde 2002, miles de euros. */
+export const SERIE = bruto.serie as Record<string, { ingresos: Record<string, number[]>; gastos: Record<string, number[]> }>;
+/** Deuda según el PDE a 31 de diciembre (Banco de España), miles de euros. */
+export const DEUDA = bruto.deuda as Record<string, Record<string, number>>;
+const POB = bruto.poblacion as Record<string, Record<string, number>>;
+export const ANIOS_SERIE: number[] = Object.keys(SERIE.MD?.gastos ?? {})
+  .map(Number)
+  .filter((a) => CCAA.every((c) => SERIE[c]?.gastos[String(a)] && POB[c]?.[String(a)]))
+  .sort((a, b) => a - b);
+/** € por habitante a partir de miles de euros, para cualquier año con población. */
+export const porHab = (miles: number, c: Ccaa, anio: number) => (miles * 1000) / POB[c][String(anio)];

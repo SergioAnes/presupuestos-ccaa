@@ -7,6 +7,7 @@ import {
   type Ccaa, type Partida, type Unidad,
 } from "@/lib/datos";
 import { Icono } from "./Icono";
+import { Deuda, Evolucion, Ingresos } from "./Dinero";
 
 const URL_ESTATUT = "https://www.boe.es/buscar/act.php?id=BOE-A-2006-13087";
 const COLOR: Record<Ccaa, string> = { MD: "var(--s1)", CT: "var(--s2)" };
@@ -23,7 +24,7 @@ function leerHash(): Estado {
   const ficha = p.get("ficha");
   return {
     anio: ANIOS.includes(anio) ? anio : ANIOS[ANIOS.length - 1],
-    u: u === "pct" || u === "mill" ? u : "hab",
+    u: u === "mill" ? "mill" : "hab",
     ficha: ficha && partida(ficha) ? ficha : null,
   };
 }
@@ -79,6 +80,30 @@ function Leyenda() {
   );
 }
 
+function Compartir() {
+  const [hecho, setHecho] = useState(false);
+  const compartir = async () => {
+    const url = location.href;
+    try {
+      if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+        await navigator.share({ title: document.title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setHecho(true);
+      setTimeout(() => setHecho(false), 2000);
+    } catch {
+      /* el usuario canceló o el navegador no deja copiar */
+    }
+  };
+  return (
+    <button className="btn sm compartir" onClick={compartir} aria-live="polite">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>
+      {hecho ? "Enlace copiado" : "Compartir"}
+    </button>
+  );
+}
+
 // ---------- tarjetas ----------
 function Tarjetas({ anio, u }: { anio: number; u: Unidad }) {
   const r = { MD: resumen("MD", anio), CT: resumen("CT", anio) };
@@ -101,15 +126,11 @@ function Tarjetas({ anio, u }: { anio: number; u: Unidad }) {
       ))}
       <div className="kpi">
         <span className="kpi-n">Diferencia{mill ? "" : " por habitante"}</span>
-        <span className="kpi-v num">{fmtDif(v("CT") - v("MD"), unidad)}</span>
+        <span className="kpi-v num">{fmtDif(v("CT") - v("MD"), unidad)} <small>({fmtPct(pct)} por habitante)</small></span>
         <span className="kpi-s">
-          {mill ? `Cataluña tiene un ${fmtNum(masHab)} % más de habitantes que Madrid` : `Lo que gasta Cataluña por habitante menos lo que gasta Madrid`}
+          Sin seguridad y prisiones, que solo gestiona Cataluña: {fmtPct(pctSin13)}.
+          {mill ? ` Cataluña tiene un ${fmtNum(masHab)} % más de habitantes.` : ""}
         </span>
-      </div>
-      <div className="kpi">
-        <span className="kpi-n">Diferencia en % (por habitante)</span>
-        <span className="kpi-v num">{fmtPct(pct)}</span>
-        <span className="kpi-s">Sin seguridad y prisiones, que solo gestiona Cataluña: {fmtPct(pctSin13)}</span>
       </div>
     </div>
   );
@@ -172,19 +193,17 @@ function Titulares({ anio, abrir }: { anio: number; abrir: Abrir }) {
         )}
       </div>
       <div className="insight">
-        <span className="k">Mayor diferencia</span>
-        <p>Cataluña gasta <strong>{e(masCT[0].d)} más por habitante</strong> en <Enl p={masCT[0].p} />{COMPETENCIA_DISTINTA.has(masCT[0].p.id) ? ", una competencia que Madrid no tiene" : ""}.</p>
+        <span className="k">Donde Cataluña gasta más</span>
+        {COMPETENCIA_DISTINTA.has(masCT[0].p.id) ? (
+          <p><strong>{e(masCT[0].d)} más por habitante</strong> en <Enl p={masCT[0].p} />, una competencia que Madrid no tiene. Entre las comparables, <strong>{e(primeraComparable.d)} más</strong> en <Enl p={primeraComparable.p} />.</p>
+        ) : (
+          <p><strong>{e(masCT[0].d)} más por habitante</strong> en <Enl p={masCT[0].p} />.</p>
+        )}
       </div>
-      {COMPETENCIA_DISTINTA.has(masCT[0].p.id) && (
-        <div className="insight">
-          <span className="k">Mayor diferencia comparable</span>
-          <p>Cataluña gasta <strong>{e(primeraComparable.d)} más por habitante</strong> en <Enl p={primeraComparable.p} />.</p>
-        </div>
-      )}
       {masMD.d < 0 && (
         <div className="insight">
           <span className="k">Donde Madrid gasta más</span>
-          <p>Madrid gasta <strong>{e(masMD.d)} más por habitante</strong> en <Enl p={masMD.p} />.</p>
+          <p><strong>{e(masMD.d)} más por habitante</strong> en <Enl p={masMD.p} />.</p>
         </div>
       )}
     </div>
@@ -465,7 +484,7 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
             <h2>{p.nombre} <Marca id={id} /></h2>
             <p className="sub">{p.oficial} · {anio}</p>
           </div>
-          <button className="ficha-x" onClick={() => ref.current?.close()} aria-label="Cerrar">×</button>
+          <div className="ficha-acc"><Compartir /><button className="ficha-x" onClick={() => ref.current?.close()} aria-label="Cerrar">×</button></div>
         </div>
 
         {QUE_INCLUYE[id] && (
@@ -572,7 +591,8 @@ export function App() {
 
         <div className="controles">
           <Seg etiqueta="Año" valor={anio} opciones={ANIOS.map((a) => [a, String(a)] as [number, string])} cambiar={(a) => cambiar({ anio: a })} />
-          <Seg etiqueta="Ver en" valor={u} opciones={[["hab", "€ por habitante"], ["pct", "% de su gasto"], ["mill", "Millones de €"]]} cambiar={(x) => cambiar({ u: x })} />
+          <Seg etiqueta="Ver en" valor={u} opciones={[["hab", "€ por habitante"], ["mill", "Millones de €"]]} cambiar={(x) => cambiar({ u: x })} />
+          <Compartir />
         </div>
 
         <Tarjetas anio={anio} u={u} />
@@ -615,6 +635,10 @@ export function App() {
           <Puente anio={anio} u={u} abrir={abrir} />
         </section>
 
+        <Ingresos anio={anio} u={u} />
+        <Deuda anio={anio} u={u} />
+        <Evolucion anio={anio} />
+
         <section className="panel">
           <h2>Todas las partidas</h2>
           <p className="sub">{UNIDAD_TXT[u]}, {anio}.</p>
@@ -648,13 +672,18 @@ function Metodo() {
         consolidados y definitivos, descargas «Clasificación Funcional» y «Clasificación Funcional por capítulos». Son <b>obligaciones reconocidas</b>:
         lo que la comunidad se comprometió a pagar ese año, no lo que presupuestó. Importes en euros corrientes de cada año.
       </p>
+      <p>
+        «¿De dónde sale el dinero?» usa la descarga «Ingresos y Gastos por capítulos» y la evolución, la «Serie Consolidados» (por capítulos, 1984-2024;
+        aquí desde 2002). La deuda acumulada es la del <a href={FUENTE.deuda_url}>Banco de España</a> (Boletín Estadístico, cuadro 13.9: deuda según el
+        Protocolo de Déficit Excesivo), a 31 de diciembre.
+      </p>
       <h3>Qué se compara</h3>
       <ul>
         <li><b>Consolidado.</b> Suma la administración general y los organismos de cada comunidad, quitando lo que se transfieren entre ellos.</li>
         <li><b>Depurado de IFL y PAC.</b> Hacienda publica una versión que resta el dinero que la comunidad solo hace llegar a otros: lo que pasa a las entidades locales (intermediación financiera local, IFL) y las ayudas de la Política Agraria Común (PAC). Usamos esa versión.</li>
         <li><b>Sin operaciones financieras.</b> Quitamos los capítulos 8 (préstamos concedidos y participaciones) y 9 (devolución de préstamos). En la política «Deuda pública» quedan los intereses.</li>
         <li><b>Por habitante.</b> Dividimos entre la población a 1 de julio del año (INE, <a href={FUENTE.poblacion_url}>Estadística Continua de Población</a>).</li>
-        <li><b>% de su gasto y «de cada 100 €».</b> Lo que pesa cada partida dentro del gasto comparado de esa comunidad. En «de cada 100 €» se redondea a euros enteros de forma que sumen 100.</li>
+        <li><b>«De cada 100 €».</b> Lo que pesa cada partida dentro del gasto comparado de esa comunidad. En «de cada 100 €» se redondea a euros enteros de forma que sumen 100.</li>
         <li><b>Qué incluye cada partida.</b> Descripción orientativa de lo que suele ir en cada política de la clasificación por programas que usa Hacienda (la misma estructura que los Presupuestos Generales del Estado). Cada comunidad decide en qué programa coloca cada gasto.</li>
         <li><b>Diferencias que destacan.</b> Criterio fijo: por habitante, una comunidad gasta al menos {DESTACA.veces} veces lo que la otra y la diferencia es de {DESTACA.minDif} € o más (sin seguridad y prisiones). Los intereses de la deuda se muestran siempre.</li>
         <li><b>En qué se va el dinero.</b> El detalle de cada política reparte su gasto por capítulos del presupuesto (personal, compras, transferencias, inversiones…). Hacienda no publica ese reparto en la versión depurada: en agricultura y transferencias a otras administraciones de Cataluña incluye el dinero que solo se reparte, y se avisa.</li>

@@ -30,3 +30,24 @@ describe("gasto comparable", () => {
     expect(resumen("CT", 2022).total - resumen("CT", 2022).intermediacion).toBeCloseTo(46996308.24, 1);
   });
 });
+
+import { ANIOS_SERIE, DEUDA, ECONOMICA, SERIE } from "@/lib/datos";
+
+describe("ingresos, serie y deuda", () => {
+  for (const anio of ANIOS)
+    for (const c of CCAA) {
+      it(`${c} ${anio}: los gastos por capítulos suman el total de Hacienda`, () => {
+        expect(ECONOMICA[c][String(anio)].gastos.reduce((s, x) => s + x, 0)).toBeCloseTo(resumen(c, anio).total, 0);
+      });
+      it(`${c} ${anio}: la serie coincide con la descarga del año`, () => {
+        expect(SERIE[c].gastos[String(anio)]).toEqual(ECONOMICA[c][String(anio)].gastos.map((x) => Math.round(x * 100) / 100));
+      });
+      it(`${c} ${anio}: hay deuda del Banco de España`, () => {
+        expect(DEUDA[c][String(anio)]).toBeGreaterThan(0);
+      });
+    }
+  it("la serie empieza en 2002 y no tiene huecos", () => {
+    expect(ANIOS_SERIE[0]).toBe(2002);
+    expect(ANIOS_SERIE.length).toBe(ANIOS_SERIE[ANIOS_SERIE.length - 1] - 2002 + 1);
+  });
+});
