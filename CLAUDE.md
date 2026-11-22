@@ -42,6 +42,10 @@ Primera versión: Madrid y Cataluña, 2022, 2023 y 2024. Proyecto hermano de `sa
 - `extraer_liquidaciones.py` también lee «Ingresos y Gastos por capítulos» y «Serie Consolidados» (comprueba que cuadran
   con la clasificación funcional capítulo a capítulo) y la deuda del Banco de España (`datos-originales/bde/be1309.csv`,
   cuadro 13.9, miles de euros, saldo de diciembre).
+- «Ingresos y Gastos por capítulos depurados IFL y PAC» (`economica_dep`): «¿De dónde sale el dinero?» y las transferencias de
+  «¿Por qué…?» usan esta versión. El script comprueba que, sin capítulos 8 y 9, su gasto es el gasto comparado. Da el reparto
+  por capítulos de lo que solo se reparte en todo el presupuesto (casi todo capítulo 4), no por política: la ficha lo dice.
+  «Clasificación Funcional por capítulos depurados» sigue dando error en la web de Hacienda.
 - Población: INE, Estadística Continua de Población, 1 de julio (series ECP115490 y ECP115494 en `datos-originales/ine/`,
   comprobadas con la tabla 56940).
 - Gasto comparado = obligaciones depuradas de IFL y PAC − capítulo 8 − capítulo 9 (la deuda queda en intereses).

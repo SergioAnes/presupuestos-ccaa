@@ -272,6 +272,18 @@ export const DESTACA = { veces: 2, minDif: 5 };
 interface Economica { ingresos: number[]; gastos: number[] }
 /** «Ingresos y Gastos por capítulos» (consolidado, sin depurar): derechos y obligaciones reconocidos, miles de euros. */
 export const ECONOMICA = bruto.economica as Record<string, Record<string, Economica>>;
+/** Lo mismo, versión depurada de IFL y PAC (sin el dinero que la comunidad solo reparte). */
+export const ECONOMICA_DEP = (bruto.economica_dep ?? {}) as Record<string, Record<string, Economica>>;
+/** Versión depurada si existe; si no, la normal. */
+export const economicaComparable = (c: string, anio: number): Economica | undefined =>
+  ECONOMICA_DEP[c]?.[String(anio)] ?? ECONOMICA[c]?.[String(anio)];
+/** En qué capítulos de gasto está el dinero que solo se reparte (todo el presupuesto), miles de €: [cap4, cap7, resto]. */
+export function depuracionPorCapitulo(c: string, anio: number): { cap4: number; cap7: number; total: number } | null {
+  const n = ECONOMICA[c]?.[String(anio)]?.gastos, d = ECONOMICA_DEP[c]?.[String(anio)]?.gastos;
+  if (!n || !d) return null;
+  const dif = n.map((x, i) => x - d[i]);
+  return { cap4: dif[3], cap7: dif[6], total: dif.reduce((s, x) => s + x, 0) };
+}
 /** «Serie Consolidados» desde 2002, miles de euros. */
 export const SERIE = bruto.serie as Record<string, { ingresos: Record<string, number[]>; gastos: Record<string, number[]> }>;
 /** Deuda según el PDE a 31 de diciembre (Banco de España), miles de euros. */

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  ANIOS_SERIE, CCAA, COLOR_CCAA, DEUDA, ECONOMICA, FUENTE, NOMBRE, SERIE, aEurosDe, fmt, porHab,
+  ANIOS_SERIE, CCAA, COLOR_CCAA, DEUDA, ECONOMICA, ECONOMICA_DEP, FUENTE, economicaComparable, NOMBRE, SERIE, aEurosDe, fmt, porHab,
   type Ccaa, type Unidad,
 } from "@/lib/datos";
 
@@ -52,20 +52,21 @@ const porCcaa = (fn: (c: Ccaa) => number) => Object.fromEntries(CCAA.map((c) => 
 
 // ---------- de dónde sale el dinero ----------
 export function Ingresos({ anio, u }: { anio: number; u: Unidad }) {
-  const e = (c: Ccaa) => ECONOMICA[c]?.[String(anio)];
+  const e = (c: Ccaa) => economicaComparable(c, anio);
+  const depurado = CCAA.every((c) => ECONOMICA_DEP[c]?.[String(anio)]);
   if (!CCAA.every(e)) return null;
   const ing = (c: Ccaa) => e(c)!.ingresos, gas = (c: Ccaa) => e(c)!.gastos;
   const filas: Par[] = [
     { id: "imp", nombre: "Impuestos", ayuda: "Directos e indirectos, propios o cedidos por el Estado (como el IRPF autonómico o la parte del IVA de la comunidad).", v: porCcaa((c) => suma(ing(c), 0, 1)) },
     { id: "tasas", nombre: "Tasas, precios públicos y otros", v: porCcaa((c) => ing(c)[2]) },
-    { id: "transf", nombre: "Transferencias recibidas", ayuda: "Del Estado, de la Unión Europea y de otras administraciones (corrientes y de capital). Si es negativo, la comunidad aporta en conjunto más de lo que recibe por este concepto.", v: porCcaa((c) => suma(ing(c), 3, 6)) },
+    { id: "transf", nombre: "Transferencias recibidas", ayuda: `Del Estado, de la Unión Europea y de otras administraciones (corrientes y de capital)${depurado ? ", sin el dinero que la comunidad solo reparte" : ""}. Si es negativo, la comunidad aporta en conjunto más de lo que recibe por este concepto.`, v: porCcaa((c) => suma(ing(c), 3, 6)) },
     { id: "patr", nombre: "Patrimonio y venta de bienes", v: porCcaa((c) => suma(ing(c), 4, 5)) },
   ];
   const ingNoFin = porCcaa((c) => suma(ing(c), 0, 1, 2, 3, 4, 5, 6));
   const gasNoFin = porCcaa((c) => suma(gas(c), 0, 1, 2, 3, 4, 5, 6));
   const totales: Par[] = [
     { id: "ingnf", nombre: "Ingresos (sin préstamos)", v: ingNoFin, fuerte: true },
-    { id: "gasnf", nombre: "Gastos (sin préstamos)", ayuda: "Incluye el dinero que la comunidad solo reparte (IFL y PAC), que también está en los ingresos.", v: gasNoFin, fuerte: true },
+    { id: "gasnf", nombre: "Gastos (sin préstamos)", ayuda: depurado ? "Es el gasto comparado del resto de la página." : "Incluye el dinero que la comunidad solo reparte (IFL y PAC), que también está en los ingresos.", v: gasNoFin, fuerte: true },
     { id: "saldo", nombre: "Diferencia", ayuda: "Ingresos menos gastos, sin contar préstamos. Si es negativa, la comunidad gastó más de lo que ingresó ese año.", v: porCcaa((c) => ingNoFin[c] - gasNoFin[c]), fuerte: true },
   ];
   return (
@@ -80,8 +81,10 @@ export function Ingresos({ anio, u }: { anio: number; u: Unidad }) {
         <summary>Cómo se cuenta (2 puntos)</summary>
         <div className="pliegue-c">
           <ul>
-            <li>Son los derechos reconocidos y las obligaciones reconocidas de la descarga «Ingresos y Gastos por capítulos» (datos consolidados). Ingresos: capítulos 1 a 7; los préstamos (capítulos 8 y 9) se ven en «Deuda».</li>
-            <li>Aquí el gasto es el total, sin quitar el dinero que la comunidad solo reparte, porque ese dinero también entra como ingreso. Por eso no coincide con el gasto comparado del resto de la página.</li>
+            <li>Son los derechos reconocidos y las obligaciones reconocidas de la descarga «Ingresos y Gastos por capítulos{depurado ? " depurados IFL y PAC" : ""}» (datos consolidados). Ingresos: capítulos 1 a 7; los préstamos (capítulos 8 y 9) se ven en «Deuda».</li>
+            <li>{depurado
+              ? "Es la versión depurada de Hacienda: sin el dinero que la comunidad solo reparte (de sus ayuntamientos y ayudas agrarias europeas), ni en los ingresos ni en los gastos. Así los gastos coinciden con el gasto comparado del resto de la página."
+              : "Aquí el gasto es el total, sin quitar el dinero que la comunidad solo reparte, porque ese dinero también entra como ingreso. Por eso no coincide con el gasto comparado del resto de la página."}</li>
           </ul>
         </div>
       </details>

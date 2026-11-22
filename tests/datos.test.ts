@@ -105,3 +105,16 @@ describe("variaciones inusuales y competencias", () => {
     for (const id of COMPETENCIA_DISTINTA) expect(notasCompetencia(id).length).toBeGreaterThan(0);
   });
 });
+
+import { ECONOMICA_DEP, depuracionPorCapitulo } from "@/lib/datos";
+
+describe("versión depurada por capítulos", () => {
+  for (const anio of ANIOS)
+    for (const c of CCAA)
+      it(`${c} ${anio}: sin préstamos, el gasto depurado es el gasto comparado de la web`, () => {
+        const g = ECONOMICA_DEP[c]?.[String(anio)]?.gastos;
+        expect(g).toBeDefined();
+        expect(g!.slice(0, 7).reduce((s, x) => s + x, 0)).toBeCloseTo(resumen(c, anio).gasto, -1);
+        expect(depuracionPorCapitulo(c, anio)!.total).toBeCloseTo(resumen(c, anio).intermediacion, -1);
+      });
+});

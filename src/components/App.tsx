@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   ANIOS, AREAS, CAPITULOS, CCAA, COLOR_CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, TRANSF_EJEMPLO, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
-  DEUDA, IFL_NOTA, capitulosMiles, csv, depuracionDe, inusualesEn, notasCompetencia, sfa, singularesDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
+  DEUDA, IFL_NOTA, capitulosMiles, csv, depuracionDe, depuracionPorCapitulo, inusualesEn, notasCompetencia, sfa, singularesDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
   type Ccaa, type Partida, type Unidad,
 } from "@/lib/datos";
 import { Icono } from "./Icono";
@@ -653,8 +653,12 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
               <span className="con-info">De todo lo anterior: dinero que solo se reparte<button className="info" aria-expanded={!!info.ifl} aria-label="Qué es el dinero que solo se reparte" onClick={() => verInfo("ifl")}>?</button></span>
               {info.ifl && (
                 <small className="bf-ayuda">
-                  Dinero que la comunidad recibe y pasa a las entidades locales (IFL) o reparte de la Política Agraria Común (PAC): no decide en qué se gasta. Hacienda lo resta en su
-                  versión «depurada», que es la que usa el resto de la página, pero no dice en qué capítulos está, así que en este desglose sigue dentro (sobre todo en transferencias).
+                  Dinero que la comunidad recibe y pasa a sus ayuntamientos (IFL) o reparte de la Política Agraria Común (PAC): no decide en qué se gasta. Hacienda lo resta en su
+                  versión «depurada», que es la que usa el resto de la página.
+                  {CCAA.map((c) => ({ c, d: depuracionPorCapitulo(c, anio) })).filter((x) => x.d && x.d.total > 0).map(({ c, d }) => (
+                    <Fragment key={c}> En todo el presupuesto de {NOMBRE[c]} son {fmt(d!.total / 1000, "mill")}: {fmt(d!.cap4 / 1000, "mill")} en transferencias corrientes y {fmt(d!.cap7 / 1000, "mill")} en transferencias de capital.</Fragment>
+                  ))}
+                  {" "}Política a política no se publica ese reparto, así que en este desglose sigue dentro.
                 </small>
               )}
             </div>

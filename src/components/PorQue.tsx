@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  COLOR_CCAA, ECONOMICA, FUENTE, NOMBRE, NOTAS_SFA, POLITICAS, aniosComparables, depuracionDe, fmtNum, gastoMiles, homogeneaConFondos,
+  COLOR_CCAA, ECONOMICA, ECONOMICA_DEP, FUENTE, NOMBRE, NOTAS_SFA, POLITICAS, aniosComparables, depuracionDe, fmtNum, gastoMiles, homogeneaConFondos,
   poblacion, resumen, saldoSistema, sfa, singularesDe,
   type Ccaa,
 } from "@/lib/datos";
@@ -54,7 +54,11 @@ export function PorQue({ a: c1, b: c2, anio }: { a: Ccaa; b: Ccaa; anio: number 
   // Ingresos del presupuesto (derechos reconocidos), € por habitante
   const ing = (c: Ccaa) => ECONOMICA[c]?.[String(y)]?.ingresos;
   const imp = (c: Ccaa) => hab(c, (ing(c)?.[0] ?? 0) + (ing(c)?.[1] ?? 0));
-  const transf = (c: Ccaa) => hab(c, (ing(c)?.[3] ?? 0) + (ing(c)?.[6] ?? 0) - POLITICAS.reduce((s, p) => s + depuracionDe(c, y, p.id), 0));
+  // Transferencias sin el dinero que solo se reparte: de la descarga depurada si existe; si no, restando la depuración del gasto
+  const ingDep = (c: Ccaa) => ECONOMICA_DEP[c]?.[String(y)]?.ingresos;
+  const transf = (c: Ccaa) => ingDep(c)
+    ? hab(c, ingDep(c)![3] + ingDep(c)![6])
+    : hab(c, (ing(c)?.[3] ?? 0) + (ing(c)?.[6] ?? 0) - POLITICAS.reduce((s, p) => s + depuracionDe(c, y, p.id), 0));
   const saldo = (c: Ccaa) => hab(c, saldoSistema(f[c]));
   const masImp = imp(A) >= imp(B) ? A : B;
   const otraImp = masImp === A ? B : A;

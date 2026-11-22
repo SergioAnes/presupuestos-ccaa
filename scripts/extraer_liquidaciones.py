@@ -7,6 +7,8 @@ Cada fichero se identifica por su contenido (año y comunidad), no por el nombre
   - «Clasificación Funcional por capítulos» (DescargaFuncionalCapDC*.xlsx): obligaciones por política y capítulo.
   - «Organismos y Entidades incluidos consolidación» (DescargaOrganismosDC*.xlsx): perímetro.
   - «Ingresos y Gastos por capítulos» (DescargaEconomicaDC*.xlsx): derechos y obligaciones reconocidos por capítulo.
+  - «Ingresos y Gastos por capítulos depurados IFL y PAC» (DescargaEconomicaDCD*.xlsx): lo mismo sin el dinero que la
+    comunidad solo reparte (entidades locales y Política Agraria Común).
   - «Serie Consolidados» (DescargaSeriesDC*.xlsx): ingresos y gastos por capítulo, 1984-último año.
 Sistema de financiación: cuadros de la liquidación de los recursos del sistema de financiación de las CCAA de régimen
 común (datos-originales/liquidacion-sfa/cuadros-liquidacion-AAAA.xlsx), las 15 comunidades: Fondo de Garantía,
@@ -106,6 +108,7 @@ def por_capitulos(fs, col):
 
 funcional = {}  # (ccaa, anio) -> {codigo: (total, depurado)}
 economica = {}  # (ccaa, anio) -> {"ingresos": [9], "gastos": [9]}
+economica_dep = {}  # lo mismo, versión depurada de IFL y PAC
 serie = {}  # ccaa -> {"ingresos": {anio: [9]}, "gastos": {anio: [9]}}
 capitulos = {}  # (ccaa, anio) -> {codigo: [c1..c9, total]}
 entidades = {}  # ccaa -> {anio: [nombres]}
@@ -161,9 +164,10 @@ for ruta in sorted(glob.glob(os.path.join(ORIGEN, "*.xlsx"))):
             comprobar(abs(sum(ing) - tot.get("ing", 0)) < TOL * 9, f"{base}: suma de ingresos ≠ total")
             comprobar(abs(sum(gas) - tot.get("gas", 0)) < TOL * 9, f"{base}: suma de gastos ≠ total")
             nuevo = {"ingresos": ing, "gastos": gas}
-            comprobar(economica.get((ccaa, anio), nuevo) == nuevo, f"{base}: otra descarga de {ccaa} {anio} trae cifras distintas")
-            economica[(ccaa, anio)] = nuevo
-            ficheros[("economica", ccaa, anio)] = base
+            destino, tipo = (economica_dep, "economica_dep") if "depurad" in titulo.lower() else (economica, "economica")
+            comprobar(destino.get((ccaa, anio), nuevo) == nuevo, f"{base}: otra descarga de {ccaa} {anio} trae cifras distintas")
+            destino[(ccaa, anio)] = nuevo
+            ficheros[(tipo, ccaa, anio)] = base
         continue
     if not titulo.lower().startswith("áreas y políticas de gasto. datos consolidados"):
         print(f"  (se ignora {base}: {titulo})")
@@ -244,6 +248,13 @@ for ccaa, anio in claves:
             comprobar(abs(economica[(ccaa, anio)]["gastos"][i] - caps[i]) < TOL * 30, f"{ccaa} {anio} cap. {i + 1}: «por capítulos» ≠ funcional")
     else:
         errores.append(f"Falta «Ingresos y Gastos por capítulos» de {ccaa} {anio}")
+    # La versión depurada, sin capítulos 8 y 9, es el gasto comparado (depurado − activos − pasivos financieros)
+    if (ccaa, anio) in economica_dep:
+        dep_gas = economica_dep[(ccaa, anio)]["gastos"]
+        comparado = sum(f["depurado"] - f["capitulos"][7] - f["capitulos"][8] for f in datos if f["ccaa"] == ccaa and f["anio"] == anio)
+        comprobar(abs(sum(dep_gas[:7]) - comparado) < TOL * 40, f"{ccaa} {anio}: «por capítulos depurados» no da el gasto comparado")
+        for i in (7, 8):
+            comprobar(abs(dep_gas[i] - caps[i]) < TOL * 30, f"{ccaa} {anio} cap. {i + 1}: la depuración no debería tocar activos ni pasivos")
     if ccaa in serie:
         for i in range(9):
             comprobar(abs(serie[ccaa]["gastos"][anio][i] - caps[i]) < TOL * 30, f"{ccaa} {anio} cap. {i + 1}: serie ≠ funcional")
@@ -386,6 +397,7 @@ salida = {
     "ficheros": [{"tipo": t, "ccaa": c, "anio": a, "fichero": f} for (t, c, a), f in sorted(ficheros.items())],
     "datos": datos,
     "economica": {c: {str(a): v for (cc, a), v in sorted(economica.items()) if cc == c} for c in sorted({c for c, _ in economica})},
+    "economica_dep": {c: {str(a): v for (cc, a), v in sorted(economica_dep.items()) if cc == c} for c in sorted({c for c, _ in economica_dep})},
     "serie": {c: {k: {str(a): [round(x, 2) for x in v] for a, v in sorted(d[k].items()) if a >= 2002} for k in ("ingresos", "gastos")} for c, d in serie.items()},
     "deuda": {c: {a: v for a, v in sorted(d.items()) if int(a) >= 2002} for c, d in deuda.items()},
     "financiacion": financiacion,
