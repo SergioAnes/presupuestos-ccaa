@@ -282,3 +282,10 @@ dialog.ficha::backdrop { background: rgb(10 15 25 / 0.5); }
   .compartir .txt { display: none; }
   .compartir { padding: 8px 10px; }
 }
+
+/* Ficha: volver y cerrar */
+.ficha-volver { border: 0; background: none; padding: 0; margin-bottom: 4px; cursor: pointer; color: var(--accent); font-weight: 600; font-size: 0.86rem; text-align: left; }
+.ficha-volver:hover { text-decoration: underline; }
+.ficha-pie { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); }
+.btn.primario { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.btn.primario:hover { filter: brightness(1.08); }

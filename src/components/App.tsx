@@ -38,8 +38,9 @@ function leerHash(): Estado {
     ficha: ficha && partida(ficha) ? ficha : null,
   };
 }
+const hashDe = (e: Estado) => `#${e.vista}?anio=${e.anio}&u=${e.u}${e.ficha ? `&ficha=${e.ficha}` : ""}`;
 function escribirHash(e: Estado) {
-  history.replaceState(null, "", `#${e.vista}?anio=${e.anio}&u=${e.u}${e.ficha ? `&ficha=${e.ficha}` : ""}`);
+  history.replaceState(null, "", hashDe(e));
 }
 
 const hab = (c: Ccaa, anio: number, id: string) => enUnidad(gastoMiles(c, anio, id), "hab", c, anio);
@@ -140,7 +141,7 @@ function Tarjetas({ anio, u }: { anio: number; u: Unidad }) {
 
 // ---------- de cada 100 € ----------
 function DeCada100({ anio, abrir }: { anio: number; abrir: Abrir }) {
-  const reparto = Object.fromEntries(CCAA.map((c) => [c, AREAS.map((a) => Math.round(enUnidad(gastoMiles(c, anio, a.id), "pct", c, anio)))])) as Record<Ccaa, number[]>;
+  const reparto = Object.fromEntries(CCAA.map((c) => [c, AREAS.map((a) => enUnidad(gastoMiles(c, anio, a.id), "pct", c, anio))])) as Record<Ccaa, number[]>;
   return (
     <section className="panel cien">
       <h2>De cada 100 € que gastan</h2>
@@ -149,24 +150,24 @@ function DeCada100({ anio, abrir }: { anio: number; abrir: Abrir }) {
         {CCAA.map((c) => (
           <div className="cien-fila" key={c}>
             <span className="cien-et"><i style={{ background: COLOR[c] }} />{NOMBRE[c]}</span>
-            <div className="cien-barra" role="img" aria-label={`${NOMBRE[c]}: ` + AREAS.map((a, i) => `${a.nombre} ${reparto[c][i]} €`).join(", ")}>
+            <div className="cien-barra" role="img" aria-label={`${NOMBRE[c]}: ` + AREAS.map((a, i) => `${a.nombre} ${fmt(reparto[c][i], "hab")}`).join(", ")}>
               {AREAS.map((a, i) => (
-                <button key={a.id} className="cien-seg" style={{ flexGrow: reparto[c][i], background: COLOR_AREA[a.id] }} onClick={() => abrir(a.id)} title={`${a.nombre}: ${reparto[c][i]} € de cada 100`}>
-                  {reparto[c][i] >= 7 && <span>{reparto[c][i]} €</span>}
+                <button key={a.id} className="cien-seg" style={{ flexGrow: reparto[c][i], background: COLOR_AREA[a.id] }} onClick={() => abrir(a.id)} title={`${a.nombre}: ${fmt(reparto[c][i], "hab")} de cada 100`}>
+                  {reparto[c][i] >= 7 && <span>{fmt(reparto[c][i], "hab")}</span>}
                 </button>
               ))}
             </div>
           </div>
         ))}
       </div>
-      <p className="ayuda">Redondeado a euros enteros: la suma puede no dar exactamente 100.</p>
+      <p className="ayuda">Por redondeo, la suma puede no dar exactamente 100.</p>
       <div className="cien-ley">
         <div className="cien-ley-cab"><span /><span>Madrid</span><span>Cataluña</span></div>
         {AREAS.map((a, i) => (
           <button key={a.id} className="cien-ley-f" onClick={() => abrir(a.id)}>
             <span className="cien-ley-n"><i style={{ background: COLOR_AREA[a.id] }} /><Icono id={a.id} tam={16} />{a.nombre}</span>
-            <span className="num">{reparto.MD[i]} €</span>
-            <span className="num">{reparto.CT[i]} €</span>
+            <span className="num">{fmt(reparto.MD[i], "hab")}</span>
+            <span className="num">{fmt(reparto.CT[i], "hab")}</span>
           </button>
         ))}
       </div>
@@ -478,8 +479,20 @@ function Fuera({ anio }: { anio: number }) {
 }
 
 // ---------- ficha de una política o área ----------
-function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: Abrir; cerrar: () => void }) {
+function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: number; abrir: Abrir; cerrar: () => void; previa?: Partida; volver: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // El evento «close» del <dialog> (×, «Cerrar», Esc, clic fuera) se escucha directamente: React no siempre lo pasa
+  const alCerrar = useRef(cerrar);
+  alCerrar.current = cerrar;
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    const h = () => alCerrar.current();
+    d.addEventListener("close", h);
+    d.addEventListener("cancel", h);
+    return () => { d.removeEventListener("close", h); d.removeEventListener("cancel", h); };
+  }, []);
+  const cerrarYa = () => { alCerrar.current(); ref.current?.close(); };
   const [info, setInfo] = useState<Record<string, boolean>>({});
   const verInfo = (k: string) => setInfo((s) => ({ ...s, [k]: !s[k] }));
   useEffect(() => {
@@ -500,16 +513,20 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
   const hijas = id.length === 1 ? POLITICAS.filter((x) => x.area === id) : [];
   const madre = id.length === 2 ? partida(id[0]) : undefined;
   return (
-    <dialog ref={ref} className="ficha" onClose={cerrar} onClick={(e) => { if (e.target === ref.current) ref.current?.close(); }}>
+    <dialog ref={ref} className="ficha" onClick={(e) => { if (e.target === ref.current) cerrarYa(); }}>
       <div className="ficha-c" tabIndex={-1}>
         <div className="ficha-cab">
           <span className="ficha-ico" style={{ color: COLOR_AREA[id[0]] }}><Icono id={id} tam={28} /></span>
           <div>
-            {madre && <button className="enlace ficha-madre" onClick={() => abrir(madre.id)}>{madre.nombre}</button>}
+            {previa ? (
+              <button className="ficha-volver" onClick={volver}>← Volver a {previa.nombre}</button>
+            ) : madre ? (
+              <button className="ficha-volver" onClick={() => abrir(madre.id)}>↑ Ver el área: {madre.nombre}</button>
+            ) : null}
             <h2>{p.nombre} <Marca id={id} /></h2>
             <p className="sub">{p.oficial} · {anio}</p>
           </div>
-          <div className="ficha-acc"><Compartir /><button className="ficha-x" onClick={() => ref.current?.close()} aria-label="Cerrar">×</button></div>
+          <div className="ficha-acc"><Compartir /><button className="ficha-x" onClick={cerrarYa} aria-label="Cerrar">×</button></div>
         </div>
 
         {QUE_INCLUYE[id] && (
@@ -521,7 +538,7 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
             <div key={c} className="ficha-kpi" style={{ borderTopColor: COLOR[c] }}>
               <span className="kpi-n"><i style={{ background: COLOR[c] }} />{NOMBRE[c]}</span>
               <span className="kpi-v num">{fmt(hab(c, anio, id), "hab")}<small> por habitante</small></span>
-              <span className="kpi-s">{fmt(gastoMiles(c, anio, id) / 1000, "mill")} · {fmtNum(enUnidad(gastoMiles(c, anio, id), "pct", c, anio))} € de cada 100 que gasta</span>
+              <span className="kpi-s">{fmt(gastoMiles(c, anio, id) / 1000, "mill")} · {fmt(enUnidad(gastoMiles(c, anio, id), "pct", c, anio), "hab")} de cada 100 que gasta</span>
             </div>
           ))}
         </div>
@@ -600,6 +617,10 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
             No incluye operaciones financieras (préstamos concedidos y devolución de préstamos): {CCAA.map((c) => `${NOMBRE[c]} ${fmt(fuera[c] / 1000, "mill")}`).join(", ")}.
           </p>
         )}
+        <div className="ficha-pie">
+          {previa && <button className="btn" onClick={volver}>← Volver a {previa.nombre}</button>}
+          <button className="btn primario" onClick={cerrarYa}>Cerrar</button>
+        </div>
       </div>
     </dialog>
   );
@@ -608,8 +629,10 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
 // ---------- página ----------
 export function App() {
   const [estado, setEstado] = useState<Estado>({ vista: "resumen", anio: ANIOS[ANIOS.length - 1], u: "hab", ficha: null });
+  // Fichas abiertas una encima de otra: «Volver» recorre las anteriores (sin tocar el historial del navegador)
+  const pila = useRef<string[]>([]);
   useEffect(() => {
-    const leer = () => setEstado(leerHash());
+    const leer = () => { pila.current = []; setEstado(leerHash()); };
     leer();
     window.addEventListener("hashchange", leer);
     return () => window.removeEventListener("hashchange", leer);
@@ -619,7 +642,14 @@ export function App() {
     setEstado(e);
     escribirHash(e);
   };
-  const abrir: Abrir = (id) => cambiar({ ficha: id });
+  const abrir: Abrir = (id) => {
+    if (id === estado.ficha) return;
+    if (estado.ficha) pila.current.push(estado.ficha);
+    cambiar({ ficha: id });
+  };
+  const cerrarFicha = () => { pila.current = []; cambiar({ ficha: null }); };
+  const volverFicha = () => cambiar({ ficha: pila.current.pop() ?? null });
+  const previaId = pila.current[pila.current.length - 1];
   const ir = (vista: Vista) => { cambiar({ vista }); window.scrollTo({ top: 0 }); };
   const { anio, u, vista } = estado;
   const siguiente = VISTAS[VISTAS.findIndex((v) => v.id === vista) + 1];
@@ -728,7 +758,10 @@ export function App() {
           Proyecto hermano de <a href="https://sanidad-ccaa.vercel.app/">Sanidad por comunidades</a>.
         </footer>
       </main>
-      {estado.ficha && <Ficha key={estado.ficha} id={estado.ficha} anio={anio} abrir={abrir} cerrar={() => cambiar({ ficha: null })} />}
+      {estado.ficha && (
+        <Ficha key={estado.ficha} id={estado.ficha} anio={anio} abrir={abrir} cerrar={cerrarFicha}
+          previa={previaId ? partida(previaId) : undefined} volver={volverFicha} />
+      )}
     </>
   );
 }

@@ -129,7 +129,7 @@ export function enUnidad(miles: number, u: Unidad, c: Ccaa, anio: number): numbe
 const nf = (d: number) =>
   new Intl.NumberFormat("es-ES", { maximumFractionDigits: d, minimumFractionDigits: d, useGrouping: "always" } as Intl.NumberFormatOptions);
 export function fmt(v: number, u: Unidad): string {
-  if (u === "hab") return `${nf(0).format(v)} €`;
+  if (u === "hab") return `${nf(Math.abs(v) >= 0.05 && Math.abs(v) < 9.95 ? 1 : 0).format(v)} €`;
   if (u === "pct") return `${nf(1).format(v)} %`;
   return `${nf(Math.abs(v) < 100 ? 1 : 0).format(v)} M€`;
 }
