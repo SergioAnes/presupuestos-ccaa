@@ -505,7 +505,8 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
   const p = partida(id)!;
   const caps = { MD: capitulosMiles("MD", anio, id), CT: capitulosMiles("CT", anio, id) };
   const capHab = (c: Ccaa, i: number) => (caps[c][i] * 1000) / poblacion(c, anio);
-  const filasCap = CAPITULOS.filter((k) => CCAA.some((c) => Math.abs(caps[c][k.n - 1]) >= 1));
+  // Sin filas en las que las dos comunidades están a 0 € por habitante (p. ej., intereses fuera de «Deuda pública»)
+  const filasCap = CAPITULOS.filter((k) => CCAA.some((c) => Math.abs((caps[c][k.n - 1] * 1000) / poblacion(c, anio)) >= 0.05));
   const maxCap = Math.max(...filasCap.flatMap((k) => CCAA.map((c) => capHab(c, k.n - 1))));
   const sumaCaps = (c: Ccaa) => caps[c].slice(0, 7).reduce((s, x) => s + x, 0);
   const dep = { MD: depuracionDe("MD", anio, id), CT: depuracionDe("CT", anio, id) };
