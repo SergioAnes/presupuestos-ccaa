@@ -14,34 +14,36 @@ const COLOR: Record<Ccaa, string> = { MD: "var(--s1)", CT: "var(--s2)" };
 const COLOR_AREA: Record<string, string> = { "1": "var(--a1)", "2": "var(--a2)", "3": "var(--a3)", "4": "var(--a4)", "9": "var(--a9)" };
 
 type Abrir = (id: string) => void;
-interface Estado { anio: number; u: Unidad; ficha: string | null }
+type Vista = "resumen" | "gasto" | "ingresos" | "metodo";
+const VISTAS: { id: Vista; nombre: string }[] = [
+  { id: "resumen", nombre: "Resumen" },
+  { id: "gasto", nombre: "En qué gastan" },
+  { id: "ingresos", nombre: "Ingresos y deuda" },
+  { id: "metodo", nombre: "Cómo leer los datos" },
+];
+interface Estado { vista: Vista; anio: number; u: Unidad; ficha: string | null }
 
-// ---------- estado en la dirección (#?anio=2024&u=hab&ficha=31) ----------
+// ---------- estado en la dirección (#gasto?anio=2024&u=hab&ficha=31) ----------
 function leerHash(): Estado {
-  const p = new URLSearchParams(location.hash.replace(/^#\??/, ""));
+  const m = location.hash.match(/^#([a-z]*)\??(.*)$/) ?? ["", "", ""];
+  const vista = (VISTAS.find((v) => v.id === m[1])?.id ?? "resumen") as Vista;
+  const p = new URLSearchParams(m[2]);
   const anio = Number(p.get("anio"));
   const u = p.get("u") as Unidad;
   const ficha = p.get("ficha");
   return {
+    vista,
     anio: ANIOS.includes(anio) ? anio : ANIOS[ANIOS.length - 1],
     u: u === "mill" ? "mill" : "hab",
     ficha: ficha && partida(ficha) ? ficha : null,
   };
 }
 function escribirHash(e: Estado) {
-  history.replaceState(null, "", `#?anio=${e.anio}&u=${e.u}${e.ficha ? `&ficha=${e.ficha}` : ""}`);
+  history.replaceState(null, "", `#${e.vista}?anio=${e.anio}&u=${e.u}${e.ficha ? `&ficha=${e.ficha}` : ""}`);
 }
 
 const hab = (c: Ccaa, anio: number, id: string) => enUnidad(gastoMiles(c, anio, id), "hab", c, anio);
 
-/** Redondea porcentajes para que sumen exactamente 100 (restos mayores). */
-function cien(vals: number[]): number[] {
-  const base = vals.map(Math.floor);
-  let falta = 100 - base.reduce((s, x) => s + x, 0);
-  const orden = vals.map((v, i) => [v - Math.floor(v), i] as const).sort((a, b) => b[0] - a[0]);
-  for (const [, i] of orden) { if (falta <= 0) break; base[i]++; falta--; }
-  return base;
-}
 
 // ---------- piezas pequeñas ----------
 function Seg<T extends string | number>({ etiqueta, valor, opciones, cambiar }: {
@@ -138,7 +140,7 @@ function Tarjetas({ anio, u }: { anio: number; u: Unidad }) {
 
 // ---------- de cada 100 € ----------
 function DeCada100({ anio, abrir }: { anio: number; abrir: Abrir }) {
-  const reparto = Object.fromEntries(CCAA.map((c) => [c, cien(AREAS.map((a) => enUnidad(gastoMiles(c, anio, a.id), "pct", c, anio)))])) as Record<Ccaa, number[]>;
+  const reparto = Object.fromEntries(CCAA.map((c) => [c, AREAS.map((a) => Math.round(enUnidad(gastoMiles(c, anio, a.id), "pct", c, anio)))])) as Record<Ccaa, number[]>;
   return (
     <section className="panel cien">
       <h2>De cada 100 € que gastan</h2>
@@ -157,6 +159,7 @@ function DeCada100({ anio, abrir }: { anio: number; abrir: Abrir }) {
           </div>
         ))}
       </div>
+      <p className="ayuda">Redondeado a euros enteros: la suma puede no dar exactamente 100.</p>
       <div className="cien-ley">
         <div className="cien-ley-cab"><span /><span>Madrid</span><span>Cataluña</span></div>
         {AREAS.map((a, i) => (
@@ -460,6 +463,8 @@ function Fuera({ anio }: { anio: number }) {
 // ---------- ficha de una política o área ----------
 function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: Abrir; cerrar: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const [info, setInfo] = useState<Record<string, boolean>>({});
+  const verInfo = (k: string) => setInfo((s) => ({ ...s, [k]: !s[k] }));
   useEffect(() => {
     const d = ref.current;
     if (d && !d.open) d.showModal();
@@ -523,12 +528,15 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
         )}
 
         <h3>En qué se va el dinero</h3>
-        <p className="sub">€ por habitante, según el tipo de gasto (capítulos del presupuesto).</p>
+        <p className="sub">€ por habitante, según el tipo de gasto (capítulos del presupuesto). Pulsa «?» para ver qué es cada uno. Cómo se organiza cada comunidad (personal propio, entes públicos o centros contratados) cambia en qué tipo aparece el gasto.</p>
         <Leyenda />
         <div className="barras">
           {filasCap.map((k) => (
             <div className="bf" key={k.n} title={`${k.oficial}\n` + CCAA.map((c) => `${NOMBRE[c]}: ${fmt(caps[c][k.n - 1] / 1000, "mill")} (${fmtNum((caps[c][k.n - 1] / (sumaCaps(c) || 1)) * 100)} %)`).join("\n")}>
-              <div className="bf-et"><span>{k.nombre}</span></div>
+              <div className="bf-et">
+                <span className="con-info">{k.nombre}<button className="info" aria-expanded={!!info[k.n]} aria-label={`Qué es «${k.nombre}»`} onClick={() => verInfo(String(k.n))}>?</button></span>
+                {info[k.n] && <small className="bf-ayuda">{k.explica}</small>}
+              </div>
               <div className="bf-barras">
                 {CCAA.map((c) => {
                   const x = capHab(c, k.n - 1);
@@ -544,10 +552,28 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
           ))}
         </div>
         {(dep.MD > 0 || dep.CT > 0) && (
-          <p className="ayuda">
-            Este desglose incluye {CCAA.filter((c) => dep[c] > 0).map((c) => `${fmt(dep[c] / 1000, "mill")} de ${NOMBRE[c]}`).join(" y ")} que Hacienda resta en su versión
-            depurada (dinero que solo se reparte: IFL y PAC). Hacienda no dice en qué capítulos está, así que aquí no se puede quitar.
-          </p>
+          <div className="bf nota-ifl">
+            <div className="bf-et">
+              <span className="con-info">De todo lo anterior: dinero que solo se reparte<button className="info" aria-expanded={!!info.ifl} aria-label="Qué es el dinero que solo se reparte" onClick={() => verInfo("ifl")}>?</button></span>
+              {info.ifl && (
+                <small className="bf-ayuda">
+                  Dinero que la comunidad recibe y pasa a las entidades locales (IFL) o reparte de la Política Agraria Común (PAC): no decide en qué se gasta. Hacienda lo resta en su
+                  versión «depurada», que es la que usa el resto de la página, pero no dice en qué capítulos está, así que en este desglose sigue dentro (sobre todo en transferencias).
+                </small>
+              )}
+            </div>
+            <div className="bf-barras">
+              {CCAA.map((c) => {
+                const x = (dep[c] * 1000) / poblacion(c, anio);
+                return (
+                  <div className="bf-pista" key={c}>
+                    <div className="bf-barra" style={{ width: `calc((100% - 84px) * ${maxCap > 0 ? x / maxCap : 0})`, background: "var(--grey-line)" }} />
+                    <span className="bf-v num">{fmt(x, "hab")}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
         {(fuera.MD > 0 || fuera.CT > 0) && (
           <p className="ayuda">
@@ -561,9 +587,9 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
 
 // ---------- página ----------
 export function App() {
-  const [estado, setEstado] = useState<Estado>({ anio: ANIOS[ANIOS.length - 1], u: "hab", ficha: null });
+  const [estado, setEstado] = useState<Estado>({ vista: "resumen", anio: ANIOS[ANIOS.length - 1], u: "hab", ficha: null });
   useEffect(() => {
-    const leer = () => { if (!/^#metodo/.test(location.hash)) setEstado(leerHash()); };
+    const leer = () => setEstado(leerHash());
     leer();
     window.addEventListener("hashchange", leer);
     return () => window.removeEventListener("hashchange", leer);
@@ -574,27 +600,40 @@ export function App() {
     escribirHash(e);
   };
   const abrir: Abrir = (id) => cambiar({ ficha: id });
-  const { anio, u } = estado;
+  const ir = (vista: Vista) => { cambiar({ vista }); window.scrollTo({ top: 0 }); };
+  const { anio, u, vista } = estado;
+  const siguiente = VISTAS[VISTAS.findIndex((v) => v.id === vista) + 1];
+  const Siguiente = () => siguiente ? (
+    <div className="siguiente"><button className="btn" onClick={() => ir(siguiente.id)}>Siguiente: {siguiente.nombre} →</button></div>
+  ) : null;
+  const enlace = (v: Vista) => `#${v}?anio=${anio}&u=${u}`;
   const depCT = { ifl: depuracionDe("CT", anio, "94"), pac: depuracionDe("CT", anio, "41") };
 
   return (
     <>
       <header className="top wrap">
         <div className="brand"><Icono id="grafico" tam={20} /> Presupuestos por comunidades<small>Gasto liquidado · datos oficiales de Hacienda</small></div>
-        <nav className="nav"><a href="#">Datos</a><a href="#metodo">Cómo leer los datos</a></nav>
+        <nav className="nav" aria-label="Secciones">
+          {VISTAS.map((v) => (
+            <a key={v.id} href={enlace(v.id)} aria-current={v.id === vista ? "page" : undefined} onClick={(e) => { e.preventDefault(); ir(v.id); }}>{v.nombre}</a>
+          ))}
+        </nav>
       </header>
       <main className="wrap">
-        <section className="intro">
-          <h1>Madrid y Cataluña: ¿en qué gastan su presupuesto?</h1>
-          <p>Lo que cada comunidad gastó de verdad (presupuesto liquidado), política a política, con los datos del Ministerio de Hacienda.</p>
-        </section>
+        {vista === "resumen" && (
+          <section className="intro">
+            <h1>Madrid y Cataluña: ¿en qué gastan su presupuesto?</h1>
+            <p>Lo que cada comunidad gastó de verdad (presupuesto liquidado), política a política, con los datos del Ministerio de Hacienda.</p>
+          </section>
+        )}
 
-        <div className="controles">
+        {vista !== "metodo" && <div className="controles">
           <Seg etiqueta="Año" valor={anio} opciones={ANIOS.map((a) => [a, String(a)] as [number, string])} cambiar={(a) => cambiar({ anio: a })} />
           <Seg etiqueta="Ver en" valor={u} opciones={[["hab", "€ por habitante"], ["mill", "Millones de €"]]} cambiar={(x) => cambiar({ u: x })} />
           <Compartir />
-        </div>
+        </div>}
 
+        {vista === "resumen" && <>
         <Tarjetas anio={anio} u={u} />
         <details className="pliegue">
           <summary>Qué cuenta este gasto (4 puntos)</summary>
@@ -603,7 +642,7 @@ export function App() {
               <li>Es el gasto <b>consolidado</b>: la administración de la comunidad y sus organismos ({ENTIDADES.MD?.["2024"]?.length ?? "—"} en Madrid y {ENTIDADES.CT?.["2024"]?.length ?? "—"} en Cataluña en 2024, entre ellos los servicios de salud), sin contar dos veces lo que se pasan entre ellos.</li>
               <li>No incluye la <b>devolución de préstamos</b> ni los <b>préstamos concedidos</b>, que no son gasto en servicios. Los <b>intereses</b> de la deuda sí están incluidos.</li>
               <li>No incluye el dinero que la comunidad <b>solo reparte</b>: en Cataluña, {fmt(depCT.ifl / 1000, "mill")} que pasan a las entidades locales y {fmt(depCT.pac / 1000, "mill")} de ayudas agrarias europeas. En Madrid, Hacienda no resta nada.</li>
-              <li>Por habitante: población a 1 de julio del INE. <a href="#metodo">Más detalle</a>.</li>
+              <li>Por habitante: población a 1 de julio del INE. <a href={enlace("metodo")} onClick={(e) => { e.preventDefault(); ir("metodo"); }}>Más detalle</a>.</li>
             </ul>
           </div>
         </details>
@@ -611,7 +650,10 @@ export function App() {
         <DeCada100 anio={anio} abrir={abrir} />
         <Titulares anio={anio} abrir={abrir} />
         <Destacadas anio={anio} abrir={abrir} />
+        <Siguiente />
+        </>}
 
+        {vista === "gasto" && <>
         <section className="panel">
           <h2>En qué gasta cada una</h2>
           <p className="sub">{UNIDAD_TXT[u]}, {anio}. Pulsa en un área para ver sus políticas, y en una política para ver su detalle.</p>
@@ -635,23 +677,32 @@ export function App() {
           <Puente anio={anio} u={u} abrir={abrir} />
         </section>
 
-        <Ingresos anio={anio} u={u} />
-        <Deuda anio={anio} u={u} />
-        <Evolucion anio={anio} />
-
         <section className="panel">
           <h2>Todas las partidas</h2>
           <p className="sub">{UNIDAD_TXT[u]}, {anio}.</p>
           <Tabla anio={anio} u={u} abrir={abrir} />
         </section>
+        <Siguiente />
+        </>}
 
+        {vista === "ingresos" && <>
+        <Ingresos anio={anio} u={u} />
+        <Deuda anio={anio} u={u} />
+        <Evolucion anio={anio} />
+        <Siguiente />
+        </>}
+
+        {vista === "metodo" && <>
+        <Metodo />
         <section className="panel">
           <h2>Lo que no se compara</h2>
+          <div className="control fuera-anio"><span className="control-t">Año</span>
+            <div className="seg" role="group" aria-label="Año">{ANIOS.map((a) => <button key={a} aria-pressed={a === anio} onClick={() => cambiar({ anio: a })}>{a}</button>)}</div>
+          </div>
           <p className="sub">Cómo se pasa del gasto comparado al total que registra Hacienda.</p>
           <Fuera anio={anio} />
         </section>
-
-        <Metodo />
+        </>}
         <footer className="pie">
           Fuentes: <a href={FUENTE.gasto_url}>Ministerio de Hacienda, liquidación de presupuestos de las CCAA</a> · <a href={FUENTE.poblacion_url}>INE, Estadística Continua de Población</a>.
           Proyecto hermano de <a href="https://sanidad-ccaa.vercel.app/">Sanidad por comunidades</a>.
@@ -665,7 +716,7 @@ export function App() {
 function Metodo() {
   return (
     <section className="metodo" id="metodo">
-      <h2>Cómo leer los datos</h2>
+      <h1>Cómo leer los datos</h1>
       <h3>De dónde salen</h3>
       <p>
         De la <a href={FUENTE.gasto_url}>liquidación de los presupuestos de las comunidades autónomas</a> que publica el Ministerio de Hacienda: datos

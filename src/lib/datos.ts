@@ -147,14 +147,14 @@ export const UNIDAD_TXT: Record<Unidad, string> = { hab: "€ por habitante", pc
 
 // ---------- desglose por capítulos (en qué se va el dinero) ----------
 /** Capítulos de gasto no financieros. El 5 (fondo de contingencia) casi nunca tiene obligaciones. */
-export const CAPITULOS: { n: number; nombre: string; oficial: string }[] = [
-  { n: 1, nombre: "Sueldos del personal", oficial: "Capítulo 1. Gastos de personal" },
-  { n: 2, nombre: "Compras de bienes y servicios", oficial: "Capítulo 2. Gastos corrientes en bienes y servicios" },
-  { n: 3, nombre: "Intereses", oficial: "Capítulo 3. Gastos financieros" },
-  { n: 4, nombre: "Transferencias y subvenciones corrientes", oficial: "Capítulo 4. Transferencias corrientes" },
-  { n: 5, nombre: "Fondo de contingencia", oficial: "Capítulo 5. Fondo de contingencia" },
-  { n: 6, nombre: "Inversiones", oficial: "Capítulo 6. Inversiones reales" },
-  { n: 7, nombre: "Transferencias de capital", oficial: "Capítulo 7. Transferencias de capital" },
+export const CAPITULOS: { n: number; nombre: string; oficial: string; explica: string }[] = [
+  { n: 1, nombre: "Sueldos del personal", oficial: "Capítulo 1. Gastos de personal", explica: "Sueldos y cotizaciones sociales de los trabajadores de la comunidad y de sus organismos: médicos, profesores, funcionarios…" },
+  { n: 2, nombre: "Compras de bienes y servicios", oficial: "Capítulo 2. Gastos corrientes en bienes y servicios", explica: "Lo que la comunidad compra o contrata para funcionar: material, suministros, alquileres, limpieza, mantenimiento y servicios hechos por otros, como los conciertos sanitarios." },
+  { n: 3, nombre: "Intereses", oficial: "Capítulo 3. Gastos financieros", explica: "Intereses de la deuda y otros gastos de los préstamos. La devolución del préstamo en sí no está aquí." },
+  { n: 4, nombre: "Transferencias y subvenciones corrientes", oficial: "Capítulo 4. Transferencias corrientes", explica: "Dinero que la comunidad entrega a otros para sus gastos del día a día, sin recibir a cambio un bien o servicio: ayudas a familias y empresas, recetas de farmacia, conciertos educativos, dinero para ayuntamientos y para entes y empresas públicas que no están en estas cuentas." },
+  { n: 5, nombre: "Fondo de contingencia", oficial: "Capítulo 5. Fondo de contingencia", explica: "Reserva para gastos imprevistos. Casi nunca se gasta desde aquí: se pasa a otros capítulos." },
+  { n: 6, nombre: "Inversiones", oficial: "Capítulo 6. Inversiones reales", explica: "Obras, edificios, equipos y otros bienes duraderos de la propia comunidad: un hospital, una carretera, un equipo de resonancia…" },
+  { n: 7, nombre: "Transferencias de capital", oficial: "Capítulo 7. Transferencias de capital", explica: "Dinero que la comunidad entrega a otros (ayuntamientos, empresas, universidades…) para que hagan inversiones." },
 ];
 
 /** Obligaciones por capítulo (1 a 9) de una política o área, en miles de euros, SIN depurar IFL y PAC. */

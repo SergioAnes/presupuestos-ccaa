@@ -5,12 +5,14 @@ Primera versión: Madrid y Cataluña, 2022 y 2024. Proyecto hermano de `sanidad-
 
 ## Estructura
 
-- Una sola página (`src/components/App.tsx`, React): tarjetas, «De cada 100 € que gastan» (barras al 100 % por área),
+- Cuatro pestañas por `#hash` (`#resumen`, `#gasto`, `#ingresos`, `#metodo`, con `?anio=…&u=…&ficha=…`), cada una con «Siguiente».
+  Resumen: tarjetas, «De cada 100 €» (redondeo normal, puede no sumar 100), titulares y diferencias que destacan. En qué gastan:
+  barras, puente y tabla. Ingresos y deuda. Cómo leer los datos + «Lo que no se compara». Contenido (`src/components/App.tsx`, React): tarjetas, «De cada 100 € que gastan» (barras al 100 % por área),
   titulares automáticos (solo cifras, sin valorar), «En qué gasta cada una» (barras por área, desplegables por política),
   «Dónde está la diferencia» (puente de Madrid a Cataluña), tabla ordenable con descarga CSV, «Lo que no se compara» y
   «Cómo leer los datos» (`#metodo`). Al pulsar un área o política se abre su ficha (`<dialog>`) con el desglose por
   capítulos («En qué se va el dinero»; los capítulos no están depurados de IFL y PAC: se avisa).
-  Estado en la dirección: `#?anio=2024&u=hab|mill&ficha=31`.
+  Ficha: «?» junto a cada capítulo (texto en `CAPITULOS` de `datos.ts`) y fila gris con el dinero que solo se reparte (IFL y PAC).
 - Después del puente: «¿De dónde sale el dinero?» (ingresos por capítulos, sin préstamos; gasto sin depurar porque IFL y PAC
   también son ingreso), «Deuda» (Banco de España + capítulos 9 y 3) y «Evolución desde 2002» (`src/components/Dinero.tsx`).
   La evolución solo usa medidas que no incluyen IFL ni PAC (deuda, intereses, personal, compras, inversiones, impuestos):
