@@ -483,7 +483,7 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
         </div>
 
         {COMPETENCIA_DISTINTA.has(id) && (
-          <p className="aviso">Cataluña tiene policía propia y gestiona sus prisiones (<a href={URL_ESTATUT}>Estatuto, arts. 164 y 168</a>). En Madrid dependen del Estado y no están en este presupuesto: no es comparable.</p>
+          <p className="aviso">Cataluña tiene policía propia y gestiona sus prisiones (<a href={URL_ESTATUT}>Estatuto, arts. 164 y 168</a>). En Madrid, la Policía Nacional, la Guardia Civil y las prisiones las paga el Estado con los impuestos generales y no pasan por el presupuesto de la Comunidad: no es comparable.</p>
         )}
 
         {hijas.length > 0 && (
@@ -600,7 +600,7 @@ export function App() {
           <details className="pliegue">
             <summary>Competencias que no son iguales (1)</summary>
             <div className="pliegue-c">
-              <p><b>Seguridad y prisiones.</b> Cataluña tiene policía propia y gestiona sus prisiones (<a href={URL_ESTATUT}>Estatuto de Autonomía, arts. 164 y 168</a>). En Madrid la policía y las prisiones dependen del Estado y su gasto no está en este presupuesto; lo que Madrid tiene en esta política son otros servicios. Por eso se marca como <span className="marca">≠ competencias</span>.</p>
+              <p><b>Seguridad y prisiones.</b> Cataluña tiene policía propia y gestiona sus prisiones (<a href={URL_ESTATUT}>Estatuto de Autonomía, arts. 164 y 168</a>). En Madrid, la Policía Nacional, la Guardia Civil y las prisiones las paga el Estado con los impuestos generales, así que ese gasto no pasa por el presupuesto de la Comunidad; lo que Madrid tiene en esta política son otros servicios. No sumamos ni restamos ninguna estimación: por eso se marca como <span className="marca">≠ competencias</span> y las tarjetas dan también la diferencia sin esta política.</p>
             </div>
           </details>
         </section>
@@ -662,7 +662,7 @@ function Metodo() {
       <h3>Límites</h3>
       <ul>
         <li><b>No mide calidad ni eficiencia.</b> Dice cuánto se gasta y en qué, no si está bien gastado.</li>
-        <li><b>Competencias distintas.</b> Cataluña tiene policía y prisiones propias; en Madrid son del Estado. Se marcan con <span className="marca">≠ competencias</span>.</li>
+        <li><b>Competencias distintas.</b> Cataluña tiene policía y prisiones propias y las paga con su presupuesto. En Madrid las paga el Estado con los impuestos generales, y ese gasto no está en el presupuesto de la Comunidad. Hacienda reparte por comunidades el gasto del Estado en sus cuentas públicas territorializadas, pero con supuestos de reparto: no lo mezclamos con la liquidación. Se marcan con <span className="marca">≠ competencias</span> y se da la diferencia sin ellas.</li>
         <li><b>Diputaciones.</b> Madrid es una comunidad uniprovincial: su comunidad hace también de diputación. Cataluña tiene cuatro diputaciones con presupuesto propio que aquí no aparecen.</li>
         <li><b>Precios y salarios.</b> No se corrige por diferencias de precios entre comunidades.</li>
         <li><b>Clasificación.</b> Cada comunidad asigna sus programas a las políticas; Hacienda los homogeneiza, pero puede haber diferencias de criterio.</li>
