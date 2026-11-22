@@ -5,7 +5,7 @@ Primera versión: Madrid y Cataluña, 2022, 2023 y 2024. Proyecto hermano de `sa
 
 ## Estructura
 
-- Cuatro pestañas por `#hash` (`#resumen`, `#gasto`, `#ingresos`, `#metodo`, con `?anio=…&u=…&ficha=…`), cada una con «Siguiente».
+- Cuatro pestañas por `#hash` (`#resumen`, `#gasto`, `#ingresos` (Ingresos y financiación), `#metodo`, con `?anio=…&u=…&ficha=…`), cada una con «Siguiente».
   Resumen: tarjetas, «De cada 100 €» (redondeo normal, puede no sumar 100), titulares y diferencias que destacan. En qué gastan:
   barras, puente y tabla. Ingresos y deuda. Cómo leer los datos + «Lo que no se compara». Contenido (`src/components/App.tsx`, React): tarjetas, «De cada 100 € que gastan» (barras al 100 % por área),
   titulares automáticos (solo cifras, sin valorar), «En qué gasta cada una» (barras por área, desplegables por política),
@@ -38,6 +38,15 @@ Primera versión: Madrid y Cataluña, 2022, 2023 y 2024. Proyecto hermano de `sa
   Gasto comparado + cap. 9 + cap. 8 + IFL/PAC = total de Hacienda (lo comprueban los tests).
 - Política 13 (seguridad y prisiones): competencias distintas (Estatut arts. 164 y 168), se marca «≠ competencias».
   En Madrid las paga el Estado; no imputar estimaciones del gasto estatal (cuentas territorializadas: supuestos de reparto).
+- Sistema de financiación: `extraer_liquidaciones.py` lee los cuadros de la liquidación (`datos-originales/liquidacion-sfa/
+  cuadros-liquidacion-AAAA.xlsx`) de las 15 comunidades de régimen común (País Vasco y Navarra no están: concierto y
+  convenio). Comprueba capacidad + Fondo de Garantía + Suficiencia = recursos y la coherencia entre cuadros. La población
+  ajustada sale de financiación homogénea ÷ financiación homogénea por habitante ajustado (cuadro 2.2.3).
+  «¿Por qué A gasta más que B?» (`src/components/PorQue.tsx`) es genérico para cualquier pareja: textos calculados, sin
+  causas. Financiación homogénea por habitante ajustado + fondos de Competitividad y Cooperación = cálculo propio (decirlo).
+  «Sin competencias singulares» usa `COMPETENCIAS_SINGULARES` de `datos.ts` (hoy CT: 13; al añadir PV y NC, su policía).
+  La parte del gasto no cubierta por el sistema no se reparte entre causas (otros ingresos, déficit): decir que no se puede.
+  Mossos: la liquidación de 2022 (cuadro 1.10.1.1) recoge su financiación dentro del Fondo de Suficiencia de Cataluña.
 - Diputaciones: Madrid es uniprovincial; las cuatro catalanas no están en estas cifras. Se avisa en el método.
 - La tabla del tuit que inspiró la web (28.142.468 / 47.156.287, 2022) no se reproduce con los datos publicados hoy.
 - `datos-originales/` no se sube a git.
