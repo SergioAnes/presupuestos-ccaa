@@ -1,4 +1,5 @@
 import bruto from "@/data/gasto.json";
+import ipcBruto from "@/data/ipc.json";
 
 /** Comunidades de esta primera versión (ids como en sanidad-ccaa). */
 export type Ccaa = "MD" | "CT";
@@ -290,3 +291,16 @@ export const COMPETENCIAS_SINGULARES: Record<string, string[]> = { CT: ["13"] };
 export const singularesDe = (a: Ccaa, b: Ccaa) => [...new Set([...(COMPETENCIAS_SINGULARES[a] ?? []), ...(COMPETENCIAS_SINGULARES[b] ?? [])])];
 /** Años con gasto y liquidación del sistema para las dos comunidades. */
 export const aniosComparables = (a: Ccaa, b: Ccaa) => ANIOS.filter((y) => sfa(a, y) && sfa(b, y));
+
+// ---------- inflación (IPC general nacional, media anual; mismo criterio que sanidad-ccaa) ----------
+export const IPC = ipcBruto.medias as Record<string, number>;
+export const IPC_FUENTE = { texto: ipcBruto.fuente as string, url: ipcBruto.url as string };
+/** Pasa un importe de euros de `desde` a euros de `hasta` con el IPC. */
+export const aEurosDe = (v: number, desde: number, hasta: number) =>
+  IPC[String(desde)] && IPC[String(hasta)] ? (v * IPC[String(hasta)]) / IPC[String(desde)] : v;
+/** Gasto comparado por habitante de una partida (o "T" para el total), en euros de cada año o de `real`. */
+export function habPartida(c: Ccaa, anio: number, id: string, real?: number): number {
+  const miles = id === "T" ? resumen(c, anio).gasto : gastoMiles(c, anio, id);
+  const v = (miles * 1000) / poblacion(c, anio);
+  return real ? aEurosDe(v, anio, real) : v;
+}

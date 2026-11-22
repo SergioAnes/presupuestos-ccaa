@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  ANIOS_SERIE, CCAA, DEUDA, ECONOMICA, FUENTE, NOMBRE, SERIE, fmt, porHab,
+  ANIOS_SERIE, CCAA, DEUDA, ECONOMICA, FUENTE, NOMBRE, SERIE, aEurosDe, fmt, porHab,
   type Ccaa, type Unidad,
 } from "@/lib/datos";
 
@@ -123,6 +123,7 @@ const MEDIDAS: { id: string; nombre: string; ayuda: string; f: (c: Ccaa, a: numb
 export function Evolucion({ anio }: { anio: number }) {
   const [medida, setMedida] = useState("deuda");
   const [marcado, setMarcado] = useState<number | null>(null);
+  const [real, setReal] = useState(true);
   const caja = useRef<HTMLDivElement>(null);
   const [ancho, setAncho] = useState(720);
   useEffect(() => {
@@ -135,7 +136,8 @@ export function Evolucion({ anio }: { anio: number }) {
   const m = MEDIDAS.find((x) => x.id === medida)!;
   const anios = ANIOS_SERIE;
   if (anios.length < 2) return null;
-  const serie = (c: Ccaa) => anios.map((a) => { const v = m.f(c, a); return v === undefined ? null : porHab(v, c, a); });
+  const ultimoAnio = anios[anios.length - 1];
+  const serie = (c: Ccaa) => anios.map((a) => { const v = m.f(c, a); if (v === undefined) return null; const h = porHab(v, c, a); return real ? aEurosDe(h, a, ultimoAnio) : h; });
   const s = { MD: serie("MD"), CT: serie("CT") };
   const W = Math.max(300, ancho), H = W < 500 ? 220 : 260, L = 44, R = 66, T = 12, B = 26;
   const vals = [...s.MD, ...s.CT].filter((v): v is number => v !== null);
@@ -154,7 +156,11 @@ export function Evolucion({ anio }: { anio: number }) {
   return (
     <section className="panel">
       <h2>Evolución desde {anios[0]}</h2>
-      <p className="sub">€ por habitante de cada año (euros corrientes, sin descontar la inflación).</p>
+      <p className="sub">€ por habitante{real ? `, en euros de ${anios[anios.length - 1]} (descontada la inflación)` : " de cada año (sin descontar la inflación)"}.</p>
+      <div className="seg sm" role="group" aria-label="Euros" style={{ marginTop: 10 }}>
+        <button aria-pressed={real} onClick={() => setReal(true)}>Sin inflación</button>
+        <button aria-pressed={!real} onClick={() => setReal(false)}>Euros de cada año</button>
+      </div>
       <div className="seg sm medidas" role="group" aria-label="Qué ver">
         {MEDIDAS.map((x) => <button key={x.id} aria-pressed={x.id === medida} onClick={() => setMedida(x.id)}>{x.nombre}</button>)}
       </div>
@@ -200,7 +206,7 @@ export function Evolucion({ anio }: { anio: number }) {
           <ul>
             <li>La serie de Hacienda va por capítulos, no por políticas, y no resta el dinero que la comunidad solo reparte (IFL y PAC). Por eso no se muestra aquí el gasto total: en Cataluña incluiría ese dinero y no sería comparable con el resto de la página. Las medidas elegidas no lo incluyen.</li>
             <li>Empieza en 2002, el primer año en que las dos comunidades gestionan la sanidad pública (traspasos del antiguo INSALUD).</li>
-            <li>Euros de cada año, sin descontar la inflación. Población a 1 de julio de cada año (INE).</li>
+            <li>«Sin inflación»: euros del último año con el IPC general nacional, media anual (INE). «Euros de cada año»: tal cual. Población a 1 de julio de cada año (INE).</li>
           </ul>
         </div>
       </details>

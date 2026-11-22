@@ -17,6 +17,10 @@ Primera versión: Madrid y Cataluña, 2022, 2023 y 2024. Proyecto hermano de `sa
   también son ingreso), «Deuda» (Banco de España + capítulos 9 y 3) y «Evolución desde 2002» (`src/components/Dinero.tsx`).
   La evolución solo usa medidas que no incluyen IFL ni PAC (deuda, intereses, personal, compras, inversiones, impuestos):
   la serie de Hacienda va por capítulos y sin depurar. Empieza en 2002 (traspasos del INSALUD). Euros corrientes.
+- «Cómo ha cambiado» (`src/components/Cambios.tsx`, pestaña «En qué gastan»): variación del gasto por habitante de cada
+  política entre dos años, «sin inflación» (euros del último año) o euros de cada año; la ficha lleva un minigráfico
+  2022-2024. IPC general nacional, media anual (`python scripts/extraer_ipc.py`, igual que sanidad-ccaa); la evolución
+  desde 2002 también tiene el interruptor. Saltos grandes: sin explicarlos (la fuente no lo hace).
 - Selector de unidad: € por habitante o millones (el «% de su gasto» lo cubre «De cada 100 €»). Botón «Compartir».
 - Iconos propios en `src/components/Icono.tsx`. Colores de áreas `--a1…--a9` (validados para daltonismo en ese orden).
 - `public/og.png`: vista previa al compartir (captura 1200×630 de la cabecera); regenerarla si cambia mucho el diseño.

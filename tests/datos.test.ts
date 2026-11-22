@@ -73,3 +73,20 @@ describe("sistema de financiación", () => {
     expect(sfa("CT", 2024)!.homogenea_hab_ajustado).toBeCloseTo(3475.49, 1);
   });
 });
+
+import { IPC, aEurosDe, habPartida } from "@/lib/datos";
+
+describe("evolución y euros constantes", () => {
+  it("el IPC cubre todos los años con gasto y la serie desde 2002", () => {
+    for (const a of [2002, ...ANIOS]) expect(IPC[String(a)]).toBeGreaterThan(0);
+  });
+  it("pasar a euros del mismo año no cambia nada y 2022→2024 sube con los precios", () => {
+    expect(aEurosDe(100, 2024, 2024)).toBe(100);
+    expect(aEurosDe(100, 2022, 2024)).toBeCloseTo((100 * IPC["2024"]) / IPC["2022"], 6);
+    expect(aEurosDe(100, 2022, 2024)).toBeGreaterThan(100);
+  });
+  it("el total por habitante es la suma de las áreas", () => {
+    for (const c of CCAA) for (const a of ANIOS)
+      expect(AREAS.reduce((s, ar) => s + habPartida(c, a, ar.id), 0)).toBeCloseTo(habPartida(c, a, "T"), 6);
+  });
+});

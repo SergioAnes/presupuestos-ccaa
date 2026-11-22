@@ -9,6 +9,7 @@ import {
 import { Icono } from "./Icono";
 import { Deuda, Evolucion, Ingresos } from "./Dinero";
 import { PorQue } from "./PorQue";
+import { Cambios, MiniEvolucion } from "./Cambios";
 
 const URL_ESTATUT = "https://www.boe.es/buscar/act.php?id=BOE-A-2006-13087";
 const COLOR: Record<Ccaa, string> = { MD: "var(--s1)", CT: "var(--s2)" };
@@ -551,6 +552,14 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
           ))}
         </div>
 
+        {ANIOS.length > 1 && (
+          <>
+            <h3>Evolución</h3>
+            <p className="sub">€ por habitante de cada año (sin descontar la inflación).</p>
+            <MiniEvolucion id={id} />
+          </>
+        )}
+
         {COMPETENCIA_DISTINTA.has(id) && (
           <p className="aviso">Cataluña tiene policía propia y gestiona sus prisiones (<a href={URL_ESTATUT}>Estatuto, arts. 164 y 168</a>). En Madrid, la Policía Nacional, la Guardia Civil y las prisiones las paga el Estado con los impuestos generales y no pasan por el presupuesto de la Comunidad: no es comparable.</p>
         )}
@@ -734,6 +743,8 @@ export function App() {
           </p>
           <Puente anio={anio} u={u} abrir={abrir} />
         </section>
+
+        <Cambios abrir={abrir} />
 
         <section className="panel">
           <h2>Todas las partidas</h2>
