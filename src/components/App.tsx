@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   ANIOS, AREAS, CAPITULOS, CCAA, COLOR_CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, TRANSF_EJEMPLO, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
-  DEUDA, capitulosMiles, csv, depuracionDe, inusualesEn, notasCompetencia, sfa, singularesDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
+  DEUDA, IFL_NOTA, capitulosMiles, csv, depuracionDe, inusualesEn, notasCompetencia, sfa, singularesDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
   type Ccaa, type Partida, type Unidad,
 } from "@/lib/datos";
 import { Icono } from "./Icono";
@@ -413,7 +413,10 @@ function Puente({ anio, u, abrir, verDeuda }: { anio: number; u: Unidad; abrir: 
       </label>
       {todo && (
         <p className="ayuda">
-          La devolución de préstamos es dinero del presupuesto, pero paga deuda de gastos de años anteriores y se cubre sobre todo con préstamos nuevos.
+          Ojo: los presupuestos totales no se comparan en igualdad.
+          {CCAA.filter((c) => resumen(c, anio).intermediacion > 0).map((c) => ` El de ${NOMBRE[c]} incluye ${fmt(resumen(c, anio).intermediacion / 1000, "mill")} que solo reparte (sobre todo, dinero de sus ayuntamientos).`).join("")}
+          {CCAA.filter((c) => resumen(c, anio).intermediacion <= 0).map((c) => ` En ${NOMBRE[c]} ese dinero no pasa por la comunidad.`).join("")}
+          {" "}La devolución de préstamos es dinero del presupuesto, pero paga deuda de gastos de años anteriores y se cubre sobre todo con préstamos nuevos.
           Lo que queda por pagar se ve mejor en la deuda acumulada: {CCAA.filter((c) => DEUDA[c]?.[String(anio)]).map((c) => `${NOMBRE[c]} ${fmt((DEUDA[c][String(anio)] * 1000) / poblacion(c, anio), "hab")}`).join(" y ")} por habitante
           a 31 de diciembre de {anio}. <button className="enlace" onClick={verDeuda}>Ver la deuda</button>
         </p>
@@ -748,7 +751,14 @@ export function App() {
             <ul>
               <li>Es el gasto <b>consolidado</b>: la administración de la comunidad y sus organismos ({CCAA.map((c) => `${ENTIDADES[c]?.["2024"]?.length ?? "—"} en ${NOMBRE[c]}`).join(" y ")} en 2024, entre ellos los servicios de salud), sin contar dos veces lo que se pasan entre ellos.</li>
               <li>No incluye la <b>devolución de préstamos</b> ni los <b>préstamos concedidos</b>, que no son gasto en servicios. Los <b>intereses</b> de la deuda sí están incluidos.</li>
-              <li>No incluye el dinero que la comunidad <b>solo reparte</b>{conDep.length ? ": " : "."}{conDep.map((x) => `en ${NOMBRE[x.c]}, ${fmt(x.ifl / 1000, "mill")} que pasan a las entidades locales y ${fmt(x.pac / 1000, "mill")} de ayudas agrarias europeas`).join("; ")}{conDep.length ? "." : ""}{sinDep.length ? ` En ${sinDep.map((x) => NOMBRE[x.c]).join(" y ")}, Hacienda no resta nada.` : ""}</li>
+              <li>
+                No incluye el dinero que la comunidad <b>solo reparte</b>{conDep.length ? ": " : "."}{conDep.map((x) => `en ${NOMBRE[x.c]}, ${fmt(x.ifl / 1000, "mill")} de sus ayuntamientos y ${fmt(x.pac / 1000, "mill")} de ayudas agrarias europeas`).join("; ")}{conDep.length ? "." : ""}
+                {conDep.filter((x) => IFL_NOTA[x.c]).map((x) => (
+                  <Fragment key={x.c}> Lo de los ayuntamientos pasa por {NOMBRE[x.c]} porque {IFL_NOTA[x.c].texto} (<a href={IFL_NOTA[x.c].fuente.url}>{IFL_NOTA[x.c].fuente.texto}</a>).</Fragment>
+                ))}
+                {sinDep.length ? ` En ${sinDep.map((x) => NOMBRE[x.c]).join(" y ")}, el Estado paga directamente a cada ayuntamiento y ese dinero no entra en el presupuesto de la comunidad: no hay nada que quitar.` : ""}
+                {" "}Así las dos se comparan sin él.
+              </li>
               <li>Si se cuenta <b>todo el presupuesto</b>, con la devolución de préstamos y lo que solo se reparte: {CCAA.map((c) => `${NOMBRE[c]} ${fmt(totalHab(c), "hab")}`).join(" y ")} por habitante. La devolución se explica en <a href={enlace("ingresos")} onClick={(e) => { e.preventDefault(); ir("ingresos"); }}>Deuda</a>.</li>
               <li>Por habitante: población a 1 de julio del INE. <a href={enlace("metodo")} onClick={(e) => { e.preventDefault(); ir("metodo"); }}>Más detalle</a>.</li>
             </ul>
@@ -852,7 +862,17 @@ function Metodo() {
       <h3>Qué se compara</h3>
       <ul>
         <li><b>Consolidado.</b> Suma la administración general y los organismos de cada comunidad, quitando lo que se transfieren entre ellos.</li>
-        <li><b>Depurado de IFL y PAC.</b> Hacienda publica una versión que resta el dinero que la comunidad solo hace llegar a otros: lo que pasa a las entidades locales (intermediación financiera local, IFL) y las ayudas de la Política Agraria Común (PAC). Usamos esa versión.</li>
+        <li>
+          <b>Depurado de IFL y PAC.</b> Hacienda publica una versión que resta el dinero que la comunidad solo hace llegar a otros: el de sus ayuntamientos
+          (intermediación financiera local, IFL) y las ayudas europeas a los agricultores (Política Agraria Común, PAC). Usamos esa versión. El caso de los
+          ayuntamientos depende de cada comunidad:
+          {Object.entries(IFL_NOTA).filter(([c]) => (CCAA as string[]).includes(c)).map(([c, n]) => (
+            <Fragment key={c}> en {NOMBRE[c as Ccaa]}, {n.texto} (<a href={n.fuente.url}>{n.fuente.texto}</a>);</Fragment>
+          ))}
+          {" "}en {CCAA.filter((c) => !IFL_NOTA[c]).map((c) => NOMBRE[c]).join(" y ")}, como en la mayoría de comunidades, el Estado paga directamente a cada
+          ayuntamiento y ese dinero no pasa por el presupuesto de la comunidad. Sin depurar, el presupuesto de una comunidad intermediaria parecería mucho mayor
+          sin que gaste más en sus servicios.
+        </li>
         <li><b>Sin operaciones financieras.</b> Quitamos los capítulos 8 (préstamos concedidos y participaciones) y 9 (devolución de préstamos). En la política «Deuda pública» quedan los intereses.</li>
         <li><b>Por habitante.</b> Dividimos entre la población a 1 de julio del año (INE, <a href={FUENTE.poblacion_url}>Estadística Continua de Población</a>).</li>
         <li><b>«De cada 100 €».</b> Lo que pesa cada partida dentro del gasto comparado de esa comunidad. En «de cada 100 €» se redondea a euros enteros de forma que sumen 100.</li>

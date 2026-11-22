@@ -79,6 +79,17 @@ export const COMPETENCIA_NOTA: Record<string, Record<string, { tiene: string; fu
 export function notasCompetencia(id: string): { quien: Ccaa; otras: Ccaa[]; nota: (typeof COMPETENCIA_NOTA)[string][string] }[] {
   return CCAA.filter((c) => COMPETENCIA_NOTA[c]?.[id]).map((c) => ({ quien: c, otras: CCAA.filter((o) => !COMPETENCIA_NOTA[o]?.[id]), nota: COMPETENCIA_NOTA[c][id] }));
 }
+/**
+ * Por qué una comunidad hace de intermediaria del dinero de sus ayuntamientos (IFL). Solo donde una norma lo establece;
+ * en el resto, el Estado paga directamente a cada ayuntamiento su participación en los impuestos estatales.
+ */
+export const IFL_NOTA: Record<string, { texto: string; fuente: { texto: string; url: string } }> = {
+  CT: {
+    texto: "su Estatuto establece que el dinero del Estado para los ayuntamientos catalanes (su parte de los impuestos estatales y las subvenciones sin condiciones) se cobra a través de la Generalitat, que lo distribuye",
+    fuente: { texto: "Estatuto de Autonomía de Cataluña, art. 219.2", url: "https://www.boe.es/buscar/act.php?id=BOE-A-2006-13087" },
+  },
+};
+
 /** Color de cada comunidad según su posición en la comparación (primera azul, segunda naranja). */
 export const COLOR_CCAA: Record<Ccaa, string> = Object.fromEntries(CCAA.map((c, i) => [c, i === 0 ? "var(--s1)" : "var(--s2)"])) as Record<Ccaa, string>;
 
