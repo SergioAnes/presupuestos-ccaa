@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
-  ANIOS, AREAS, CAPITULOS, CCAA, COMPETENCIA_DISTINTA, ENTIDADES, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
+  ANIOS, AREAS, CAPITULOS, CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
   capitulosMiles, csv, depuracionDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
   type Ccaa, type Partida, type Unidad,
 } from "@/lib/datos";
@@ -191,19 +191,81 @@ function Titulares({ anio, abrir }: { anio: number; abrir: Abrir }) {
   );
 }
 
+// ---------- diferencias que destacan ----------
+function Destacadas({ anio, abrir }: { anio: number; abrir: Abrir }) {
+  const fila = (p: Partida) => ({ p, md: hab("MD", anio, p.id), ct: hab("CT", anio, p.id) });
+  const veces = (x: { md: number; ct: number }) => Math.max(x.md, x.ct) / Math.min(x.md, x.ct);
+  const lista = POLITICAS.filter((p) => !COMPETENCIA_DISTINTA.has(p.id) && p.id !== "95")
+    .map(fila)
+    .filter((x) => Math.abs(x.ct - x.md) >= DESTACA.minDif && veces(x) >= DESTACA.veces)
+    .sort((a, b) => veces(b) - veces(a));
+  const intereses = POLITICAS.find((p) => p.id === "95");
+  const items = [...(intereses ? [fila(intereses)] : []), ...lista];
+  const nf1 = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 1 });
+  return (
+    <section className="panel">
+      <h2>Diferencias que destacan</h2>
+      <p className="sub">€ por habitante, {anio}. Políticas en las que una comunidad gasta al menos el doble que la otra, y los intereses de la deuda. Pulsa en una para ver el detalle.</p>
+      <div className="destacadas">
+        {items.map(({ p, md, ct }) => {
+          const max = Math.max(md, ct);
+          const quien: Ccaa = ct >= md ? "CT" : "MD";
+          const otra: Ccaa = quien === "CT" ? "MD" : "CT";
+          const menor = Math.min(md, ct);
+          const etiqueta = menor < 1 ? `${NOMBRE[otra]}: menos de 1 €` : `${NOMBRE[quien]}: ×${nf1.format(max / menor)}`;
+          const vals: [Ccaa, number][] = [["MD", md], ["CT", ct]];
+          return (
+            <button key={p.id} className="dest" onClick={() => abrir(p.id)}>
+              <span className="dest-n"><Icono id={p.id} tam={18} />{p.id === "95" ? "Intereses de la deuda" : p.nombre}</span>
+              {vals.map(([c, v]) => (
+                <span className="dest-f" key={c}>
+                  <span className="dest-c">{NOMBRE[c]}</span>
+                  <span className="dest-pista"><span className="dest-barra" style={{ width: `${max > 0 ? (v / max) * 100 : 0}%`, background: COLOR[c] }} /></span>
+                  <span className="dest-v num">{v < 10 ? `${nf1.format(v)} €` : fmt(v, "hab")}</span>
+                </span>
+              ))}
+              <span className="dest-e" style={{ borderColor: COLOR[menor < 1 ? otra : quien] }}>{etiqueta}</span>
+            </button>
+          );
+        })}
+      </div>
+      <details className="pliegue">
+        <summary>Criterio</summary>
+        <div className="pliegue-c">
+          <p>Aparecen las políticas en las que una comunidad gasta, por habitante, al menos {DESTACA.veces} veces lo que la otra y la diferencia es de {DESTACA.minDif} € o más. Están ordenadas de mayor a menor proporción. Seguridad y prisiones no aparece porque las competencias no son iguales. Los intereses de la deuda se muestran siempre. Es un criterio fijo: no dice si un gasto está justificado.</p>
+        </div>
+      </details>
+    </section>
+  );
+}
+
 // ---------- barras comparadas por área (desplegables por política) ----------
 function Barras({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
   const [abiertas, setAbiertas] = useState<Record<string, boolean>>({});
   const val = (c: Ccaa, id: string) => enUnidad(gastoMiles(c, anio, id), u, c, anio);
-  const filas: { p: Partida; nivel: 0 | 1 }[] = [];
+  const filas: { p: Partida; nivel: 0 | 1 | 2 }[] = [];
   for (const a of AREAS) {
     filas.push({ p: a, nivel: 0 });
-    if (abiertas[a.id]) for (const p of POLITICAS.filter((x) => x.area === a.id)) filas.push({ p, nivel: 1 });
+    if (abiertas[a.id]) {
+      for (const p of POLITICAS.filter((x) => x.area === a.id)) filas.push({ p, nivel: 1 });
+      filas.push({ p: a, nivel: 2 });
+    }
   }
   const max = Math.max(...filas.flatMap(({ p }) => CCAA.map((c) => val(c, p.id))));
   return (
     <div className="barras">
-      {filas.map(({ p, nivel }) => (
+      {filas.map(({ p, nivel }) => nivel === 2 ? (
+        <details key={p.id + "-inc"} className="pliegue incluye">
+          <summary>¿Qué incluye «{p.nombre}»?</summary>
+          <div className="pliegue-c">
+            <p>{QUE_INCLUYE[p.id]}</p>
+            <ul>
+              {POLITICAS.filter((x) => x.area === p.id).map((x) => <li key={x.id}><b>{x.nombre}:</b> {QUE_INCLUYE[x.id] ?? x.oficial}</li>)}
+            </ul>
+            <p className="ayuda">Orientativo: cada comunidad decide en qué programa coloca cada gasto.</p>
+          </div>
+        </details>
+      ) : (
         <div key={p.id} className={`bf n${nivel}`} title={`${p.oficial}\n` + CCAA.map((c) => `${NOMBRE[c]}: ${fmt(val(c, p.id), u)}`).join("\n")}>
           <div className="bf-et">
             {nivel === 0 ? (
@@ -406,6 +468,10 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
           <button className="ficha-x" onClick={() => ref.current?.close()} aria-label="Cerrar">×</button>
         </div>
 
+        {QUE_INCLUYE[id] && (
+          <p className="incluye-f"><b>Qué incluye.</b> {QUE_INCLUYE[id]} <span className="ayuda">Orientativo: cada comunidad decide en qué programa coloca cada gasto.</span></p>
+        )}
+
         <div className="ficha-kpis">
           {CCAA.map((c) => (
             <div key={c} className="ficha-kpi" style={{ borderTopColor: COLOR[c] }}>
@@ -524,6 +590,7 @@ export function App() {
 
         <DeCada100 anio={anio} abrir={abrir} />
         <Titulares anio={anio} abrir={abrir} />
+        <Destacadas anio={anio} abrir={abrir} />
 
         <section className="panel">
           <h2>En qué gasta cada una</h2>
@@ -588,6 +655,8 @@ function Metodo() {
         <li><b>Sin operaciones financieras.</b> Quitamos los capítulos 8 (préstamos concedidos y participaciones) y 9 (devolución de préstamos). En la política «Deuda pública» quedan los intereses.</li>
         <li><b>Por habitante.</b> Dividimos entre la población a 1 de julio del año (INE, <a href={FUENTE.poblacion_url}>Estadística Continua de Población</a>).</li>
         <li><b>% de su gasto y «de cada 100 €».</b> Lo que pesa cada partida dentro del gasto comparado de esa comunidad. En «de cada 100 €» se redondea a euros enteros de forma que sumen 100.</li>
+        <li><b>Qué incluye cada partida.</b> Descripción orientativa de lo que suele ir en cada política de la clasificación por programas que usa Hacienda (la misma estructura que los Presupuestos Generales del Estado). Cada comunidad decide en qué programa coloca cada gasto.</li>
+        <li><b>Diferencias que destacan.</b> Criterio fijo: por habitante, una comunidad gasta al menos {DESTACA.veces} veces lo que la otra y la diferencia es de {DESTACA.minDif} € o más (sin seguridad y prisiones). Los intereses de la deuda se muestran siempre.</li>
         <li><b>En qué se va el dinero.</b> El detalle de cada política reparte su gasto por capítulos del presupuesto (personal, compras, transferencias, inversiones…). Hacienda no publica ese reparto en la versión depurada: en agricultura y transferencias a otras administraciones de Cataluña incluye el dinero que solo se reparte, y se avisa.</li>
       </ul>
       <h3>Límites</h3>

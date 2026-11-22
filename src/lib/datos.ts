@@ -194,3 +194,42 @@ export function csv(anio: number): string {
   lineas.push(`"Gasto comparado: obligaciones reconocidas, datos consolidados, depuradas de IFL y PAC, sin capítulos 8 y 9. Fuente: ${FUENTE.gasto}. Población: ${FUENTE.poblacion}. Año ${anio}."`);
   return "﻿" + lineas.join("\r\n");
 }
+
+// ---------- qué incluye cada partida ----------
+/**
+ * Descripción orientativa, en lenguaje llano, de lo que suele ir en cada área y política de la clasificación por
+ * programas que usa Hacienda (la misma estructura que los Presupuestos Generales del Estado). Cada comunidad decide en
+ * qué programa coloca cada gasto: no son listas cerradas. No incluir cifras ni valoraciones aquí.
+ */
+export const QUE_INCLUYE: Record<string, string> = {
+  "1": "Justicia, seguridad y prisiones, y acción exterior: los servicios básicos de un Estado que la comunidad gestiona cuando tiene la competencia.",
+  "11": "Los medios de la Administración de Justicia en la comunidad: funcionarios de los juzgados (no los jueces), edificios, medios materiales y justicia gratuita.",
+  "13": "Policía autonómica, prisiones, protección civil y emergencias, y seguridad vial, según las competencias de cada comunidad.",
+  "14": "Acción exterior de la comunidad (delegaciones y oficinas fuera de España, relaciones con la Unión Europea) y cooperación internacional al desarrollo.",
+  "2": "Servicios sociales, empleo, vivienda y prestaciones que paga la propia comunidad.",
+  "21": "Pensiones y complementos de pensión que paga la propia comunidad. Las pensiones de la Seguridad Social no están aquí.",
+  "23": "Dependencia, residencias y centros de día, familia e infancia, rentas mínimas, igualdad, juventud y otros servicios sociales.",
+  "24": "Políticas activas de empleo: formación para el empleo, orientación, oficinas de empleo e incentivos a la contratación.",
+  "26": "Vivienda pública y protegida, ayudas al alquiler, a la compra y a la rehabilitación.",
+  "3": "Sanidad, educación y cultura: los grandes servicios públicos que gestionan las comunidades.",
+  "31": "Hospitales y centros de salud, su personal, medicamentos con receta, conciertos con centros sanitarios y salud pública.",
+  "32": "Colegios e institutos públicos, conciertos con centros concertados, universidades, formación profesional y becas.",
+  "33": "Museos, bibliotecas, archivos, patrimonio histórico, promoción cultural y deporte.",
+  "4": "Ayudas y servicios a sectores económicos, transporte e infraestructuras, e investigación.",
+  "41": "Agricultura, ganadería, pesca, desarrollo rural y seguridad alimentaria. La versión depurada de Hacienda no incluye las ayudas de la Política Agraria Común que la comunidad solo reparte.",
+  "42": "Promoción industrial, energía y minas.",
+  "43": "Comercio, turismo y apoyo a pequeñas y medianas empresas.",
+  "44": "Ayudas al transporte público para que el billete cueste menos: abonos, metro, autobuses y consorcios de transporte.",
+  "45": "Carreteras, obras hidráulicas, infraestructuras de transporte y actuaciones de medio ambiente.",
+  "46": "Investigación, desarrollo e innovación: centros de investigación, ayudas a proyectos y transferencia de tecnología.",
+  "49": "Otras actuaciones económicas, como telecomunicaciones y sociedad de la información, consumo o defensa de la competencia.",
+  "9": "El funcionamiento general de la comunidad: gobierno y parlamento, administración, hacienda, dinero para otras administraciones y deuda.",
+  "91": "Presidencia y gobierno de la comunidad, parlamento autonómico y otros órganos de su Estatuto (de control de cuentas, consultivos o defensor del pueblo autonómico).",
+  "92": "Administración general: función pública, patrimonio, informática, estadística, boletín oficial y otros servicios comunes.",
+  "93": "Gestión de los impuestos de la comunidad, tesorería y control interno de las cuentas.",
+  "94": "Dinero para ayuntamientos, comarcas y otras administraciones. La versión depurada no incluye lo que la comunidad solo hace llegar a las entidades locales.",
+  "95": "Intereses de la deuda de la comunidad. La devolución de los préstamos no se cuenta en esta página.",
+};
+
+/** Criterio fijo de «Diferencias que destacan» (€ por habitante): una comunidad gasta al menos el doble y la diferencia es de 5 € o más. */
+export const DESTACA = { veces: 2, minDif: 5 };
