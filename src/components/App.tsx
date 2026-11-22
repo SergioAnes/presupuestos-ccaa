@@ -350,7 +350,8 @@ function Puente({ anio, u, abrir, verDeuda }: { anio: number; u: Unidad; abrir: 
   ];
   const ratio = poblacion(B, anio) / poblacion(A, anio);
   const pasos: { id: string; p?: Partida; nombre: string; d: number; nota?: string; extra?: boolean }[] = [];
-  if (un === "mill") pasos.push({ id: "pob", nombre: `Por tener ${ratio >= 1 ? "más" : "menos"} habitantes`, d: tot(A) * (ratio - 1), nota: `${NOMBRE[A]} × ${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(ratio)} (habitantes de ${NOMBRE[B]} ÷ habitantes de ${NOMBRE[A]})` });
+  const millHab = (c: Ccaa) => new Intl.NumberFormat("es-ES", { maximumFractionDigits: 2 }).format(poblacion(c, anio) / 1e6);
+  if (un === "mill") pasos.push({ id: "pob", nombre: `Si ${NOMBRE[A]} tuviera los habitantes de ${NOMBRE[B]}`, d: tot(A) * (ratio - 1), nota: `${fmt(tot(A), "mill")} × ${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(ratio)} (${millHab(B)} ÷ ${millHab(A)} millones de habitantes) = ${fmt(tot(A) * ratio, "mill")}` });
   const difs = POLITICAS.map((p) => ({ id: p.id, p, nombre: p.nombre, d: val(B, p.id) - (un === "mill" ? val(A, p.id) * ratio : val(A, p.id)) }));
   difs.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
   const N = 9;
@@ -791,7 +792,7 @@ export function App() {
           <h2>Dónde está la diferencia</h2>
           <p className="sub">
             {u === "mill"
-              ? `Millones de €, ${anio}. Del gasto de ${NOMBRE[A]} al de ${NOMBRE[B]}: primero, lo que supone la diferencia de habitantes; después, la diferencia de cada política con la misma población.`
+              ? `Millones de €, ${anio}. Del gasto de ${NOMBRE[A]} al de ${NOMBRE[B]}: primero, lo que supone la diferencia de habitantes; después, cada política comparada con ${NOMBRE[A]} escalada a la población de ${NOMBRE[B]} (× ${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(poblacion(B, anio) / poblacion(A, anio))}).`
               : `Euros por habitante, ${anio}. Del gasto de ${NOMBRE[A]} al de ${NOMBRE[B]}, sumando la diferencia de cada política.`}
           </p>
           <Puente anio={anio} u={u} abrir={abrir} verDeuda={() => { cambiar({ vista: "ingresos" }); setTimeout(() => document.getElementById("deuda")?.scrollIntoView(), 50); }} />
