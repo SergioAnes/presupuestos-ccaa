@@ -5,9 +5,14 @@ Primera versión: Madrid y Cataluña, 2022 y 2024. Proyecto hermano de `sanidad-
 
 ## Estructura
 
-- Una sola página (`src/components/App.tsx`, React): tarjetas, «En qué gasta cada una» (barras por área, desplegables
-  por política), «Dónde está la diferencia» (puente de Madrid a Cataluña), tabla ordenable, «Lo que no se compara» y
-  «Cómo leer los datos» (`#metodo`). Estado en la dirección: `#?anio=2024&u=hab|pct|mill`.
+- Una sola página (`src/components/App.tsx`, React): tarjetas, «De cada 100 € que gastan» (barras al 100 % por área),
+  titulares automáticos (solo cifras, sin valorar), «En qué gasta cada una» (barras por área, desplegables por política),
+  «Dónde está la diferencia» (puente de Madrid a Cataluña), tabla ordenable con descarga CSV, «Lo que no se compara» y
+  «Cómo leer los datos» (`#metodo`). Al pulsar un área o política se abre su ficha (`<dialog>`) con el desglose por
+  capítulos («En qué se va el dinero»; los capítulos no están depurados de IFL y PAC: se avisa).
+  Estado en la dirección: `#?anio=2024&u=hab|pct|mill&ficha=31`.
+- Iconos propios en `src/components/Icono.tsx`. Colores de áreas `--a1…--a9` (validados para daltonismo en ese orden).
+- `public/og.png`: vista previa al compartir (captura 1200×630 de la cabecera); regenerarla si cambia mucho el diseño.
 - `src/lib/datos.ts`: cálculos y nombres cortos de las políticas. Colores: Madrid `--s1`, Cataluña `--s2` (validados para daltonismo).
 
 ## Reglas de datos

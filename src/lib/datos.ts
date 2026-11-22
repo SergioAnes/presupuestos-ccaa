@@ -124,12 +124,6 @@ export function enUnidad(miles: number, u: Unidad, c: Ccaa, anio: number): numbe
   return (miles / resumen(c, anio).gasto) * 100;
 }
 
-export function depuracion(c: Ccaa, anio: number, id: string): number {
-  return filas(c, anio)
-    .filter((f) => f.politica === id)
-    .reduce((s, f) => s + f.total - f.depurado, 0);
-}
-
 // ---------- formatos ----------
 // «always»: en español, Intl no separa los miles en números de cuatro cifras (4069 → 4.069)
 const nf = (d: number) =>
@@ -150,3 +144,53 @@ export const fmtNum = (v: number) => nf(0).format(v);
 /** Por debajo de esto (€ por habitante en Madrid), el % de diferencia no se muestra: sale desorbitado y no dice nada. */
 export const MIN_HAB_PCT = 5;
 export const UNIDAD_TXT: Record<Unidad, string> = { hab: "€ por habitante", pct: "% de su gasto", mill: "millones de €" };
+
+// ---------- desglose por capítulos (en qué se va el dinero) ----------
+/** Capítulos de gasto no financieros. El 5 (fondo de contingencia) casi nunca tiene obligaciones. */
+export const CAPITULOS: { n: number; nombre: string; oficial: string }[] = [
+  { n: 1, nombre: "Sueldos del personal", oficial: "Capítulo 1. Gastos de personal" },
+  { n: 2, nombre: "Compras de bienes y servicios", oficial: "Capítulo 2. Gastos corrientes en bienes y servicios" },
+  { n: 3, nombre: "Intereses", oficial: "Capítulo 3. Gastos financieros" },
+  { n: 4, nombre: "Transferencias y subvenciones corrientes", oficial: "Capítulo 4. Transferencias corrientes" },
+  { n: 5, nombre: "Fondo de contingencia", oficial: "Capítulo 5. Fondo de contingencia" },
+  { n: 6, nombre: "Inversiones", oficial: "Capítulo 6. Inversiones reales" },
+  { n: 7, nombre: "Transferencias de capital", oficial: "Capítulo 7. Transferencias de capital" },
+];
+
+/** Obligaciones por capítulo (1 a 9) de una política o área, en miles de euros, SIN depurar IFL y PAC. */
+export function capitulosMiles(c: Ccaa, anio: number, id: string): number[] {
+  const out = Array(9).fill(0) as number[];
+  for (const f of filas(c, anio)) {
+    if (id.length === 1 ? f.politica[0] !== id : f.politica !== id) continue;
+    f.capitulos.forEach((v, i) => (out[i] += v));
+  }
+  return out;
+}
+
+/** Lo que Hacienda resta en la versión depurada (IFL y PAC) de una política o área, en miles de euros. */
+export function depuracionDe(c: Ccaa, anio: number, id: string): number {
+  return filas(c, anio)
+    .filter((f) => (id.length === 1 ? f.politica[0] === id : f.politica === id))
+    .reduce((s, f) => s + f.total - f.depurado, 0);
+}
+
+export function partida(id: string): Partida | undefined {
+  return id.length === 1 ? AREAS.find((a) => a.id === id) : POLITICAS.find((p) => p.id === id);
+}
+
+/** Datos del año en CSV (separador «;» y coma decimal, para abrirlo en Excel en español). */
+export function csv(anio: number): string {
+  const n = (v: number, d = 2) => v.toFixed(d).replace(".", ",");
+  const cab = ["codigo", "partida", "nombre_oficial", ...CCAA.flatMap((c) => [`${NOMBRE[c]}_miles_eur`, `${NOMBRE[c]}_eur_hab`, `${NOMBRE[c]}_pct`])];
+  const lineas = [cab.join(";")];
+  for (const p of [...AREAS, ...POLITICAS].sort((a, b) => (a.id[0] === b.id[0] ? a.id.length - b.id.length || a.id.localeCompare(b.id) : a.id.localeCompare(b.id)))) {
+    const vals = CCAA.flatMap((c) => {
+      const m = gastoMiles(c, anio, p.id);
+      return [n(m), n(enUnidad(m, "hab", c, anio)), n(enUnidad(m, "pct", c, anio))];
+    });
+    lineas.push([p.id, `"${p.nombre}"`, `"${p.oficial}"`, ...vals].join(";"));
+  }
+  lineas.push("");
+  lineas.push(`"Gasto comparado: obligaciones reconocidas, datos consolidados, depuradas de IFL y PAC, sin capítulos 8 y 9. Fuente: ${FUENTE.gasto}. Población: ${FUENTE.poblacion}. Año ${anio}."`);
+  return "﻿" + lineas.join("\r\n");
+}
