@@ -10,9 +10,9 @@ Primera versión: Madrid y Cataluña, 2022 y 2024. Proyecto hermano de `sanidad-
   «Dónde está la diferencia» (puente de Madrid a Cataluña), tabla ordenable con descarga CSV, «Lo que no se compara» y
   «Cómo leer los datos» (`#metodo`). Al pulsar un área o política se abre su ficha (`<dialog>`) con el desglose por
   capítulos («En qué se va el dinero»; los capítulos no están depurados de IFL y PAC: se avisa).
-  Estado en la dirección: `#?anio=2024&u=hab|pct|mill&ficha=31`.
+  Estado en la dirección: `#?anio=2024&u=hab|mill&ficha=31`.
 - Después del puente: «¿De dónde sale el dinero?» (ingresos por capítulos, sin préstamos; gasto sin depurar porque IFL y PAC
-  también son ingreso), «Deuda» (Banco de España + capítulos 9 y 3) y «Evolución desde 2002» (type is a shell builtin).
+  también son ingreso), «Deuda» (Banco de España + capítulos 9 y 3) y «Evolución desde 2002» (`src/components/Dinero.tsx`).
   La evolución solo usa medidas que no incluyen IFL ni PAC (deuda, intereses, personal, compras, inversiones, impuestos):
   la serie de Hacienda va por capítulos y sin depurar. Empieza en 2002 (traspasos del INSALUD). Euros corrientes.
 - Selector de unidad: € por habitante o millones (el «% de su gasto» lo cubre «De cada 100 €»). Botón «Compartir».
