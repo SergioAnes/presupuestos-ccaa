@@ -151,10 +151,10 @@ export const CAPITULOS: { n: number; nombre: string; oficial: string; explica: s
   { n: 1, nombre: "Sueldos del personal", oficial: "Capítulo 1. Gastos de personal", explica: "Sueldos y cotizaciones sociales de los trabajadores de la comunidad y de sus organismos: médicos, profesores, funcionarios…" },
   { n: 2, nombre: "Compras de bienes y servicios", oficial: "Capítulo 2. Gastos corrientes en bienes y servicios", explica: "Lo que la comunidad compra o contrata para funcionar: material, suministros, alquileres, limpieza, mantenimiento y servicios hechos por otros, como los conciertos sanitarios." },
   { n: 3, nombre: "Intereses", oficial: "Capítulo 3. Gastos financieros", explica: "Intereses de la deuda y otros gastos de los préstamos. Casi todos se apuntan en la política «Deuda pública»; en las demás suelen ser cero. La devolución del préstamo en sí no está aquí." },
-  { n: 4, nombre: "Transferencias y subvenciones corrientes", oficial: "Capítulo 4. Transferencias corrientes", explica: "Dinero que la comunidad entrega a otros para sus gastos del día a día, sin recibir a cambio un bien o servicio: ayudas a familias y empresas, recetas de farmacia, conciertos educativos, dinero para ayuntamientos y para entes y empresas públicas que no están en estas cuentas." },
+  { n: 4, nombre: "Transferencias y subvenciones corrientes", oficial: "Capítulo 4. Transferencias corrientes", explica: "Dinero que la comunidad entrega a otros para sus gastos del día a día, sin recibir a cambio un bien o servicio. Puede ir a familias, empresas, asociaciones, ayuntamientos o a entes y empresas públicas que no están en estas cuentas. Hacienda no publica, política a política, quién lo recibe." },
   { n: 5, nombre: "Fondo de contingencia", oficial: "Capítulo 5. Fondo de contingencia", explica: "Reserva para gastos imprevistos. Casi nunca se gasta desde aquí: se pasa a otros capítulos." },
   { n: 6, nombre: "Inversiones", oficial: "Capítulo 6. Inversiones reales", explica: "Obras, edificios, equipos y otros bienes duraderos de la propia comunidad: un hospital, una carretera, un equipo de resonancia…" },
-  { n: 7, nombre: "Transferencias de capital", oficial: "Capítulo 7. Transferencias de capital", explica: "Dinero que la comunidad entrega a otros (ayuntamientos, empresas, universidades…) para que hagan inversiones." },
+  { n: 7, nombre: "Transferencias de capital", oficial: "Capítulo 7. Transferencias de capital", explica: "Dinero que la comunidad entrega a otros (ayuntamientos, empresas, universidades…) para que hagan inversiones. Hacienda no publica, política a política, quién lo recibe." },
 ];
 
 /** Obligaciones por capítulo (1 a 9) de una política o área, en miles de euros, SIN depurar IFL y PAC. */
@@ -249,3 +249,21 @@ export const ANIOS_SERIE: number[] = Object.keys(SERIE.MD?.gastos ?? {})
   .sort((a, b) => a - b);
 /** € por habitante a partir de miles de euros, para cualquier año con población. */
 export const porHab = (miles: number, c: Ccaa, anio: number) => (miles * 1000) / POB[c][String(anio)];
+
+/**
+ * Ejemplo típico de transferencias corrientes (capítulo 4) en algunas políticas, para el «?» de la ficha.
+ * Solo donde es lo habitual; en el resto no se pone ejemplo. No son cifras: Hacienda no da el destinatario por política.
+ */
+export const TRANSF_EJEMPLO: Record<string, string> = {
+  "14": "ayudas a proyectos de cooperación internacional",
+  "21": "las propias pensiones y complementos que paga la comunidad",
+  "23": "ayudas a personas y familias (como rentas mínimas o prestaciones de dependencia) y a entidades sociales",
+  "24": "subvenciones para la contratación y la formación",
+  "31": "las recetas de farmacia",
+  "32": "los conciertos con colegios concertados y las becas",
+  "33": "subvenciones a entidades culturales y deportivas",
+  "41": "ayudas a agricultores, ganaderos y pescadores",
+  "44": "aportaciones a consorcios y empresas de transporte para abaratar el billete",
+  "46": "ayudas a centros de investigación y universidades",
+  "94": "dinero para ayuntamientos y otras entidades locales",
+};

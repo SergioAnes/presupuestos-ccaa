@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Proyecto: web estática (Next.js + TypeScript) que compara el gasto liquidado de las comunidades autónomas.
-Primera versión: Madrid y Cataluña, 2022 y 2024. Proyecto hermano de `sanidad-ccaa` (mismo estilo y mismas reglas).
+Primera versión: Madrid y Cataluña, 2022, 2023 y 2024. Proyecto hermano de `sanidad-ccaa` (mismo estilo y mismas reglas).
 
 ## Estructura
 

@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
-  ANIOS, AREAS, CAPITULOS, CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
+  ANIOS, AREAS, CAPITULOS, CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, TRANSF_EJEMPLO, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
   capitulosMiles, csv, depuracionDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
   type Ccaa, type Partida, type Unidad,
 } from "@/lib/datos";
@@ -573,7 +573,7 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
             <div className="bf" key={k.n} title={`${k.oficial}\n` + CCAA.map((c) => `${NOMBRE[c]}: ${fmt(caps[c][k.n - 1] / 1000, "mill")} (${fmtNum((caps[c][k.n - 1] / (sumaCaps(c) || 1)) * 100)} %)`).join("\n")}>
               <div className="bf-et">
                 <span className="con-info">{k.nombre}<button className="info" aria-expanded={!!info[k.n]} aria-label={`Qué es «${k.nombre}»`} onClick={() => verInfo(String(k.n))}>?</button></span>
-                {info[k.n] && <small className="bf-ayuda">{k.explica}</small>}
+                {info[k.n] && <small className="bf-ayuda">{k.explica}{k.n === 4 && TRANSF_EJEMPLO[id] ? ` En esta política suele incluir, por ejemplo, ${TRANSF_EJEMPLO[id]}.` : ""}</small>}
               </div>
               <div className="bf-barras">
                 {CCAA.map((c) => {

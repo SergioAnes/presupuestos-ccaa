@@ -157,7 +157,9 @@ for ruta in sorted(glob.glob(os.path.join(ORIGEN, "*.xlsx"))):
             ing, gas, tot = por_capitulos(fs, 3)  # derechos reconocidos netos / obligaciones reconocidas
             comprobar(abs(sum(ing) - tot.get("ing", 0)) < TOL * 9, f"{base}: suma de ingresos ≠ total")
             comprobar(abs(sum(gas) - tot.get("gas", 0)) < TOL * 9, f"{base}: suma de gastos ≠ total")
-            economica[(ccaa, anio)] = {"ingresos": ing, "gastos": gas}
+            nuevo = {"ingresos": ing, "gastos": gas}
+            comprobar(economica.get((ccaa, anio), nuevo) == nuevo, f"{base}: otra descarga de {ccaa} {anio} trae cifras distintas")
+            economica[(ccaa, anio)] = nuevo
             ficheros[("economica", ccaa, anio)] = base
         continue
     if not titulo.lower().startswith("áreas y políticas de gasto. datos consolidados"):
@@ -174,6 +176,7 @@ for ruta in sorted(glob.glob(os.path.join(ORIGEN, "*.xlsx"))):
             d[cod] = vals
             nombres.setdefault(cod, nom)
             comprobar(abs(sum(vals[:9]) - vals[9]) < TOL * 9, f"{base} {cod}: la suma de capítulos no da el total")
+        comprobar(capitulos.get((ccaa, anio), d) == d, f"{base}: otra descarga de {ccaa} {anio} trae cifras distintas")
         capitulos[(ccaa, anio)] = d
         ficheros[("capitulos", ccaa, anio)] = base
     elif any("depuradas" in c for c in cab):
@@ -181,6 +184,7 @@ for ruta in sorted(glob.glob(os.path.join(ORIGEN, "*.xlsx"))):
         for cod, nom, v in ps:
             d[cod] = (num(v[0]), num(v[2]))
             nombres.setdefault(cod, nom)
+        comprobar(funcional.get((ccaa, anio), d) == d, f"{base}: otra descarga de {ccaa} {anio} trae cifras distintas")
         funcional[(ccaa, anio)] = d
         ficheros[("funcional", ccaa, anio)] = base
     else:
