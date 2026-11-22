@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ANIOS_SERIE, CCAA, DEUDA, ECONOMICA, FUENTE, NOMBRE, SERIE, fmt, porHab,
   type Ccaa, type Unidad,
@@ -122,12 +122,22 @@ const MEDIDAS: { id: string; nombre: string; ayuda: string; f: (c: Ccaa, a: numb
 
 export function Evolucion({ anio }: { anio: number }) {
   const [medida, setMedida] = useState("deuda");
+  const [marcado, setMarcado] = useState<number | null>(null);
+  const caja = useRef<HTMLDivElement>(null);
+  const [ancho, setAncho] = useState(720);
+  useEffect(() => {
+    const el = caja.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setAncho(Math.round(e.contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const m = MEDIDAS.find((x) => x.id === medida)!;
   const anios = ANIOS_SERIE;
   if (anios.length < 2) return null;
   const serie = (c: Ccaa) => anios.map((a) => { const v = m.f(c, a); return v === undefined ? null : porHab(v, c, a); });
   const s = { MD: serie("MD"), CT: serie("CT") };
-  const W = 720, H = 260, L = 48, R = 70, T = 12, B = 26;
+  const W = Math.max(300, ancho), H = W < 500 ? 220 : 260, L = 44, R = 66, T = 12, B = 26;
   const vals = [...s.MD, ...s.CT].filter((v): v is number => v !== null);
   const paso = (() => { const bruto = Math.max(...vals) / 4; const p = 10 ** Math.floor(Math.log10(bruto || 1)); return [1, 2, 2.5, 5, 10].map((k) => k * p).find((k) => k >= bruto) ?? p * 10; })();
   const ymax = Math.ceil(Math.max(...vals) / paso) * paso || 1;
@@ -135,6 +145,7 @@ export function Evolucion({ anio }: { anio: number }) {
   const y = (v: number) => T + (1 - v / ymax) * (H - T - B);
   const camino = (c: Ccaa) => s[c].map((v, i) => (v === null ? "" : `${i === 0 || s[c][i - 1] === null ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`)).join("");
   const iSel = anios.indexOf(anio);
+  const iVer = marcado ?? (iSel >= 0 ? iSel : anios.length - 1);
   const nf = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0, useGrouping: "always" } as Intl.NumberFormatOptions);
   const ultimo = (c: Ccaa) => { for (let i = anios.length - 1; i >= 0; i--) if (s[c][i] !== null) return i; return -1; };
   // Etiquetas finales sin solaparse
@@ -148,7 +159,12 @@ export function Evolucion({ anio }: { anio: number }) {
         {MEDIDAS.map((x) => <button key={x.id} aria-pressed={x.id === medida} onClick={() => setMedida(x.id)}>{x.nombre}</button>)}
       </div>
       <p className="ayuda">{m.ayuda}</p>
-      <div className="chart">
+      <div className="lectura" aria-live="polite">
+        <b>{anios[iVer]}</b>
+        {CCAA.map((c) => <span key={c}><i style={{ background: COLOR[c] }} />{NOMBRE[c]}: <b className="num">{s[c][iVer] === null ? "sin dato" : `${nf.format(s[c][iVer]!)} €`}</b></span>)}
+        <span className="lectura-ayuda">Toca o pasa por el gráfico para ver otro año.</span>
+      </div>
+      <div className="chart" ref={caja}>
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${m.nombre}, € por habitante, ${anios[0]}-${anios[anios.length - 1]}`}>
           {Array.from({ length: Math.round(ymax / paso) + 1 }, (_, k) => k * paso).map((v) => (
             <g key={v}>
@@ -156,10 +172,12 @@ export function Evolucion({ anio }: { anio: number }) {
               <text x={L - 6} y={y(v) + 4} textAnchor="end" fontSize="11" fill="var(--muted)">{nf.format(v)}</text>
             </g>
           ))}
-          {anios.map((a, i) => (a % 4 === 2 || i === anios.length - 1) && (
+          {anios.map((a, i) => ((W < 500 ? a % 6 === 2 : a % 4 === 2) || i === anios.length - 1) && (
             <text key={a} x={x(i)} y={H - 6} textAnchor="middle" fontSize="11" fill="var(--muted)">{a}</text>
           ))}
           {iSel >= 0 && <line x1={x(iSel)} x2={x(iSel)} y1={T} y2={H - B} stroke="var(--grey-line)" strokeDasharray="3 3" />}
+          <line x1={x(iVer)} x2={x(iVer)} y1={T} y2={H - B} stroke="var(--muted)" strokeWidth="1" />
+          {CCAA.map((c) => s[c][iVer] === null ? null : <circle key={c} cx={x(iVer)} cy={y(s[c][iVer]!)} r="4.5" fill={COLOR[c]} stroke="var(--surface)" strokeWidth="2" />)}
           {CCAA.map((c) => <path key={c} d={camino(c)} fill="none" stroke={COLOR[c]} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />)}
           {CCAA.map((c) => { const i = ultimo(c); return i < 0 ? null : (
             <g key={c}>
@@ -168,7 +186,8 @@ export function Evolucion({ anio }: { anio: number }) {
             </g>
           ); })}
           {anios.map((a, i) => (
-            <rect key={a} x={x(i) - (W - L - R) / (anios.length - 1) / 2} y={T} width={(W - L - R) / (anios.length - 1)} height={H - T - B} fill="transparent">
+            <rect key={a} x={x(i) - (W - L - R) / (anios.length - 1) / 2} y={T} width={(W - L - R) / (anios.length - 1)} height={H - T - B} fill="transparent"
+              onMouseEnter={() => setMarcado(i)} onClick={() => setMarcado(i)} style={{ cursor: "pointer" }}>
               <title>{`${a}\n` + CCAA.map((c) => `${NOMBRE[c]}: ${s[c][i] === null ? "sin dato" : nf.format(s[c][i]!) + " €"}`).join("\n")}</title>
             </rect>
           ))}

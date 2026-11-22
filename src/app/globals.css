@@ -255,3 +255,30 @@ dialog.ficha::backdrop { background: rgb(10 15 25 / 0.5); }
   .nav { width: 100%; }
   .nav a { padding: 8px 10px; font-size: 0.84rem; }
 }
+
+/* Táctil: «Resto» del puente y lectura de la evolución */
+.resto-lista { list-style: none; margin: 0 0 6px; padding: 6px 0 6px 22px; display: grid; gap: 4px; font-size: 0.84rem; border-left: 2px solid var(--line); }
+.resto-lista li { display: flex; align-items: center; gap: 6px; }
+.resto-lista .num { margin-left: auto; color: var(--muted); }
+.pf-et .bf-ayuda { display: block; margin-top: 2px; }
+.lectura { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); font-size: 0.86rem; }
+.lectura i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.lectura-ayuda { flex-basis: 100%; font-size: 0.74rem; color: var(--muted); }
+.ficha-c:focus { outline: none; }
+.chart rect:hover { fill: transparent; }
+
+/* Móvil: pestañas en dos filas, controles compactos */
+@media (max-width: 640px) {
+  .nav { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; }
+  .nav a { text-align: center; white-space: normal; }
+  .controles { gap: 8px 10px; }
+  .control-t { display: none; }
+  .compartir { margin-left: auto; }
+  .cien-ley-n { gap: 6px; font-size: 0.86rem; }
+  .cien-ley-n .icono { display: none; }
+}
+@media (max-width: 640px) {
+  .seg button { padding: 7px 10px; }
+  .compartir .txt { display: none; }
+  .compartir { padding: 8px 10px; }
+}

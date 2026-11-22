@@ -99,9 +99,9 @@ function Compartir() {
     }
   };
   return (
-    <button className="btn sm compartir" onClick={compartir} aria-live="polite">
+    <button className="btn sm compartir" onClick={compartir} aria-live="polite" aria-label={hecho ? "Enlace copiado" : "Compartir"} title="Compartir">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>
-      {hecho ? "Enlace copiado" : "Compartir"}
+      <span className="txt">{hecho ? "Enlace copiado" : "Compartir"}</span>
     </button>
   );
 }
@@ -319,6 +319,7 @@ function Barras({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
 
 // ---------- puente: de Madrid a Cataluña, política a política ----------
 function Puente({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
+  const [verResto, setVerResto] = useState(false);
   const un: Unidad = u === "mill" ? "mill" : "hab";
   const val = (c: Ccaa, id: string) => enUnidad(gastoMiles(c, anio, id), un, c, anio);
   const tot = (c: Ccaa) => enUnidad(resumen(c, anio).gasto, un, c, anio);
@@ -344,13 +345,29 @@ function Puente({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
         <span className="pf-v num">{fmt(tot("MD"), un)}</span>
       </div>
       {segs.map((s) => (
-        <div className="pf" key={s.id} title={s.nota ?? undefined}>
-          <span className="pf-et">{s.p ? <Nombre p={s.p} abrir={abrir} /> : s.nombre} <Marca id={s.id} /></span>
-          <div className="pf-pista">
-            <div className="pf-seg" style={{ left: pc(s.desde), width: `max(2px, ${pc(s.hasta - s.desde)})`, background: s.id === "pob" ? "var(--grey-line)" : s.d >= 0 ? COLOR.CT : COLOR.MD }} />
+        <Fragment key={s.id}>
+          <div className="pf">
+            <span className="pf-et">
+              {s.p ? <Nombre p={s.p} abrir={abrir} /> : s.id === "resto" ? (
+                <button className="bf-abrir" aria-expanded={verResto} onClick={() => setVerResto((v) => !v)}>
+                  <span className="chev" aria-hidden>{verResto ? "▾" : "▸"}</span>{s.nombre}
+                </button>
+              ) : s.nombre} <Marca id={s.id} />
+              {s.id === "pob" && <small className="bf-ayuda">{s.nota}</small>}
+            </span>
+            <div className="pf-pista">
+              <div className="pf-seg" style={{ left: pc(s.desde), width: `max(2px, ${pc(s.hasta - s.desde)})`, background: s.id === "pob" ? "var(--grey-line)" : s.d >= 0 ? COLOR.CT : COLOR.MD }} />
+            </div>
+            <span className="pf-v num">{fmtDif(s.d, un)}</span>
           </div>
-          <span className="pf-v num">{fmtDif(s.d, un)}</span>
-        </div>
+          {s.id === "resto" && verResto && (
+            <ul className="resto-lista">
+              {[...resto].sort((a, b) => b.d - a.d).map((x) => (
+                <li key={x.id}><Nombre p={x.p} abrir={abrir} /> <Marca id={x.id} /><span className="num">{fmtDif(x.d, un)}</span></li>
+              ))}
+            </ul>
+          )}
+        </Fragment>
       ))}
       <div className="pf extremo">
         <span className="pf-et">Cataluña</span>
@@ -467,7 +484,10 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
   const verInfo = (k: string) => setInfo((s) => ({ ...s, [k]: !s[k] }));
   useEffect(() => {
     const d = ref.current;
-    if (d && !d.open) d.showModal();
+    if (d && !d.open) {
+      d.showModal();
+      d.querySelector<HTMLElement>(".ficha-c")?.focus();
+    }
   }, [id]);
   const p = partida(id)!;
   const caps = { MD: capitulosMiles("MD", anio, id), CT: capitulosMiles("CT", anio, id) };
@@ -481,7 +501,7 @@ function Ficha({ id, anio, abrir, cerrar }: { id: string; anio: number; abrir: A
   const madre = id.length === 2 ? partida(id[0]) : undefined;
   return (
     <dialog ref={ref} className="ficha" onClose={cerrar} onClick={(e) => { if (e.target === ref.current) ref.current?.close(); }}>
-      <div className="ficha-c">
+      <div className="ficha-c" tabIndex={-1}>
         <div className="ficha-cab">
           <span className="ficha-ico" style={{ color: COLOR_AREA[id[0]] }}><Icono id={id} tam={28} /></span>
           <div>
