@@ -95,7 +95,7 @@ export function PorQue({ a: c1, b: c2, anio }: { a: Ccaa; b: Ccaa; anio: number 
       <h3 className="h3-panel">La diferencia de gasto, con distintos ajustes</h3>
       <div className="tabla-wrap">
         <table className="tabla pq">
-          <thead><tr><th>{NOMBRE[A]} menos {NOMBRE[B]}</th>{anios.map((x) => <th key={x}>{x}</th>)}</tr></thead>
+          <thead><tr><th>Lo que gasta {NOMBRE[A]} de más</th>{anios.map((x) => <th key={x}>{x}</th>)}</tr></thead>
           <tbody>
             {([
               ["Por habitante", "hab"],

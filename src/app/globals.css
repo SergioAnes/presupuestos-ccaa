@@ -335,3 +335,9 @@ dialog.ficha::backdrop { background: rgb(10 15 25 / 0.5); }
 
 /* Variación inusual */
 .cb-inus { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--note-bg); color: var(--note); font-size: 0.7rem; font-weight: 800; margin-right: 4px; vertical-align: 1px; border: 1px solid var(--note); }
+
+/* Tarjeta de diferencia: líneas cortas */
+.kpi-l { margin: 2px 0 0; padding-left: 16px; display: grid; gap: 2px; font-size: 0.76rem; color: var(--muted); line-height: 1.35; }
+.kpi-l b { color: var(--fg); }
+.kpi-pq { justify-self: start; font-size: 0.8rem; margin-top: 4px; }
+.kpi-l b { white-space: nowrap; }

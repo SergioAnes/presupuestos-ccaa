@@ -12,7 +12,7 @@ import { PorQue } from "./PorQue";
 import { Cambios, MiniEvolucion } from "./Cambios";
 
 const COLOR = COLOR_CCAA;
-// Pareja comparada: A es la primera (base de las diferencias: «B menos A») y B la segunda. Los textos se generan con sus nombres.
+// Pareja comparada: A es la primera (base de las diferencias: lo que B gasta de más o de menos) y B la segunda. Los textos se generan con sus nombres.
 const [A, B] = CCAA;
 const SIN = singularesDe(A, B);
 const nombreDe = (id: string) => POLITICAS.find((p) => p.id === id)?.nombre ?? id;
@@ -127,6 +127,10 @@ function Tarjetas({ anio, u, verPorQue }: { anio: number; u: Unidad; verPorQue: 
   const masHab = (r[B].poblacion / r[A].poblacion - 1) * 100;
   const fa = { a: sfa(A, anio), b: sfa(B, anio) };
   const ajSin = fa.a && fa.b ? ((gastoSin(B) / fa.b.poblacion_ajustada) / (gastoSin(A) / fa.a.poblacion_ajustada) - 1) * 100 : null;
+  // Quién gasta más por habitante: los porcentajes se expresan siempre respecto a la que gasta menos
+  const pctSigno = pct >= 0 ? 1 : -1;
+  const MAS: Ccaa = pct >= 0 ? B : A, MENOS: Ccaa = MAS === B ? A : B;
+  const inv = (x: number) => (pct >= 0 ? x : (1 / (1 + x / 100) - 1) * 100);
   return (
     <div className="kpis">
       {CCAA.map((c) => (
@@ -137,15 +141,15 @@ function Tarjetas({ anio, u, verPorQue }: { anio: number; u: Unidad; verPorQue: 
         </div>
       ))}
       <div className="kpi">
-        <span className="kpi-n">Diferencia{mill ? "" : " por habitante"}</span>
-        <span className="kpi-v num">{fmtDif(v(B) - v(A), unidad)} <small>({fmtPct(pct)} por habitante)</small></span>
-        <span className="kpi-s">
-          {NOMBRE[B]} menos {NOMBRE[A]}.
-          {pctSin !== null && <> Sin {NOMBRES_SIN}, que solo gestiona {QUIEN_SIN}: {fmtPct(pctSin)}.</>}
-          {ajSin !== null && <> Por habitante ajustado (edad y reparto de la población){SIN.length ? ` y sin ${NOMBRES_SIN}` : ""}: {fmtPct(ajSin)}.</>}
-          {mill ? ` ${NOMBRE[B]} tiene un ${fmtNum(Math.abs(masHab))} % ${masHab >= 0 ? "más" : "menos"} de habitantes.` : ""}
-          {" "}<button className="enlace" onClick={verPorQue}>¿Por qué?</button>
-        </span>
+        <span className="kpi-n">{NOMBRE[MAS]} gasta más{mill ? "" : " por habitante"}</span>
+        <span className="kpi-v num">{fmt(Math.abs(v(B) - v(A)), unidad)} <small>más que {NOMBRE[MENOS]}</small></span>
+        <ul className="kpi-l">
+          <li>Un <b>{fmtNum(Math.abs(inv(pct)))} %</b> más por habitante</li>
+          {pctSin !== null && <li>Sin {NOMBRES_SIN} (solo {QUIEN_SIN}): <b>{fmtNum(Math.abs(inv(pctSin)))} %</b> {pctSin * pctSigno >= 0 ? "más" : "menos"}</li>}
+          {ajSin !== null && <li>Teniendo en cuenta la edad y el reparto de la población{SIN.length ? ", y sin esa política" : ""}: <b>{fmtNum(Math.abs(inv(ajSin)))} %</b> {ajSin * pctSigno >= 0 ? "más" : "menos"}</li>}
+          {mill && <li>{NOMBRE[B]} tiene un {fmtNum(Math.abs(masHab))} % {masHab >= 0 ? "más" : "menos"} de habitantes que {NOMBRE[A]}</li>}
+        </ul>
+        <button className="enlace kpi-pq" onClick={verPorQue}>¿Por qué gasta más?</button>
       </div>
     </div>
   );
@@ -456,8 +460,8 @@ function Tabla({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
         </table>
       </div>
       <p className="ayuda">
-        Pulsa en una columna para ordenar y en una política para ver su detalle. «Diferencia»: {NOMBRE[B]} menos {NOMBRE[A]}. «Dif. por hab.»: cuánto más (o menos)
-        gasta {NOMBRE[B]} por habitante, en %; «—» cuando {NOMBRE[A]} gasta menos de {MIN_HAB_PCT} € por habitante y el porcentaje no dice nada.
+        Pulsa en una columna para ordenar y en una política para ver su detalle. «Diferencia»: lo que gasta {NOMBRE[B]} de más (+) o de menos (−) que {NOMBRE[A]}.
+        «Dif. por hab.»: lo mismo en %. Sale «—» cuando {NOMBRE[A]} gasta menos de {MIN_HAB_PCT} € por habitante y el porcentaje no dice nada.
       </p>
       <div className="acciones"><button className="btn sm" onClick={descargar}>Descargar datos de {anio} (CSV)</button></div>
     </>
