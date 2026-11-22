@@ -267,3 +267,26 @@ export const TRANSF_EJEMPLO: Record<string, string> = {
   "46": "ayudas a centros de investigación y universidades",
   "94": "dinero para ayuntamientos y otras entidades locales",
 };
+
+// ---------- sistema de financiación (régimen común, 15 comunidades) ----------
+export interface Financiacion {
+  fg_aporta: number; fg_recibe: number; fg: number; fsg: number; competitividad: number; cooperacion: number;
+  no_homogeneas: number; homogenea: number; homogenea_hab_ajustado: number; poblacion_ajustada: number;
+}
+/** Liquidación del sistema de financiación por comunidad y año (miles de euros; población ajustada en personas). */
+export const FINANCIACION = bruto.financiacion as Record<string, Record<string, Financiacion>>;
+export const NOTAS_SFA = bruto.notas_sfa as { policia_ct?: { anio: number; valor_2013: number } };
+export const sfa = (c: string, anio: number): Financiacion | undefined => FINANCIACION[c]?.[String(anio)];
+/** Saldo de la comunidad con el sistema: Fondo de Garantía + Suficiencia + Competitividad + Cooperación (miles de €). */
+export const saldoSistema = (f: Financiacion) => f.fg + f.fsg + f.competitividad + f.cooperacion;
+/** Financiación homogénea por habitante ajustado incluidos los fondos de convergencia (cálculo propio, €). */
+export const homogeneaConFondos = (f: Financiacion) => ((f.homogenea + f.competitividad + f.cooperacion) * 1000) / f.poblacion_ajustada;
+
+/**
+ * Políticas en las que cada comunidad tiene competencias que otras no tienen (se quitan al comparar
+ * «a competencias homogéneas»). Al añadir comunidades: País Vasco y Navarra también tienen policía propia.
+ */
+export const COMPETENCIAS_SINGULARES: Record<string, string[]> = { CT: ["13"] };
+export const singularesDe = (a: Ccaa, b: Ccaa) => [...new Set([...(COMPETENCIAS_SINGULARES[a] ?? []), ...(COMPETENCIAS_SINGULARES[b] ?? [])])];
+/** Años con gasto y liquidación del sistema para las dos comunidades. */
+export const aniosComparables = (a: Ccaa, b: Ccaa) => ANIOS.filter((y) => sfa(a, y) && sfa(b, y));

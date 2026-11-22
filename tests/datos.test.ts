@@ -51,3 +51,25 @@ describe("ingresos, serie y deuda", () => {
     expect(ANIOS_SERIE.length).toBe(ANIOS_SERIE[ANIOS_SERIE.length - 1] - 2002 + 1);
   });
 });
+
+import { FINANCIACION, homogeneaConFondos, saldoSistema, sfa } from "@/lib/datos";
+
+describe("sistema de financiación", () => {
+  it("trae las 15 comunidades de régimen común en todos los años del gasto", () => {
+    expect(Object.keys(FINANCIACION).length).toBe(15);
+    for (const c of Object.keys(FINANCIACION)) for (const a of ANIOS) expect(sfa(c, a)).toBeDefined();
+  });
+  for (const a of ANIOS)
+    it(`${a}: el saldo del Fondo de Garantía es lo recibido menos lo aportado`, () => {
+      for (const c of Object.keys(FINANCIACION)) {
+        const f = sfa(c, a)!;
+        expect(f.fg_recibe - f.fg_aporta).toBeCloseTo(f.fg, 0);
+        expect(Number.isFinite(saldoSistema(f)) && Number.isFinite(homogeneaConFondos(f))).toBe(true);
+      }
+    });
+  it("2024 reproduce cifras publicadas (miles de €)", () => {
+    expect(sfa("MD", 2024)!.fg).toBeCloseTo(-6365644.44, 1);
+    expect(sfa("CT", 2024)!.fsg).toBeCloseTo(1142846.45, 1);
+    expect(sfa("CT", 2024)!.homogenea_hab_ajustado).toBeCloseTo(3475.49, 1);
+  });
+});

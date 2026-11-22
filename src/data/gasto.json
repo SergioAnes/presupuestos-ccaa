@@ -6,7 +6,9 @@
   "poblacion": "INE, Estadística Continua de Población (tabla 56940), población a 1 de julio",
   "poblacion_url": "https://www.ine.es/jaxiT3/Tabla.htm?t=56940",
   "deuda": "Banco de España, Boletín Estadístico, cuadro 13.9: deuda según el Protocolo de Déficit Excesivo por comunidades autónomas, saldo a 31 de diciembre",
-  "deuda_url": "https://www.bde.es/webbe/es/estadisticas/otras-clasificaciones/publicaciones/boletin-estadistico/capitulo-13.html"
+  "deuda_url": "https://www.bde.es/webbe/es/estadisticas/otras-clasificaciones/publicaciones/boletin-estadistico/capitulo-13.html",
+  "sfa": "Ministerio de Hacienda, liquidación de los recursos del sistema de financiación de las CCAA de régimen común (cuadros)",
+  "sfa_url": "https://www.hacienda.gob.es/es-ES/CDI/Paginas/SistemasFinanciacionDeuda/InformacionCCAAs/Informes%20financiacion%20comunidades%20autonomas2.aspx"
  },
  "anios": [
   2022,
@@ -462,6 +464,24 @@
    "ccaa": "MD",
    "anio": 2024,
    "fichero": "DescargaSeriesDC.xlsx"
+  },
+  {
+   "tipo": "sfa",
+   "ccaa": "todas",
+   "anio": 2022,
+   "fichero": "cuadros-liquidacion-2022.xlsx"
+  },
+  {
+   "tipo": "sfa",
+   "ccaa": "todas",
+   "anio": 2023,
+   "fichero": "cuadros-liquidacion-2023.xlsx"
+  },
+  {
+   "tipo": "sfa",
+   "ccaa": "todas",
+   "anio": 2024,
+   "fichero": "cuadros-liquidacion-2024.xlsx"
   }
  ],
  "datos": [
@@ -4502,6 +4522,584 @@
    "2023": 85986159.0,
    "2024": 89035422.0,
    "2025": 90081729.0
+  }
+ },
+ "financiacion": {
+  "AN": {
+   "2022": {
+    "fg_aporta": 15337157.32,
+    "fg_recibe": 21306902.58,
+    "fg": 5969745.26,
+    "fsg": 706289.02,
+    "competitividad": 0,
+    "cooperacion": 721672.55,
+    "no_homogeneas": 1297672.48,
+    "homogenea": 25827904.89,
+    "homogenea_hab_ajustado": 3103.69,
+    "poblacion_ajustada": 8321685
+   },
+   "2023": {
+    "fg_aporta": 15907548.77,
+    "fg_recibe": 21754504.18,
+    "fg": 5846955.41,
+    "fsg": 644658.06,
+    "competitividad": 0,
+    "cooperacion": 645762.92,
+    "no_homogeneas": 1184437.25,
+    "homogenea": 26517241.25,
+    "homogenea_hab_ajustado": 3158.49,
+    "poblacion_ajustada": 8395540
+   },
+   "2024": {
+    "fg_aporta": 17564903.66,
+    "fg_recibe": 23574447.5,
+    "fg": 6009543.84,
+    "fsg": 645555.17,
+    "competitividad": 0,
+    "cooperacion": 644491.96,
+    "no_homogeneas": 1186085.5,
+    "homogenea": 28888885.04,
+    "homogenea_hab_ajustado": 3412.27,
+    "poblacion_ajustada": 8466186
+   }
+  },
+  "AR": {
+   "2022": {
+    "fg_aporta": 3233085.03,
+    "fg_recibe": 3613651.3,
+    "fg": 380566.27,
+    "fsg": 390066.57,
+    "competitividad": 0,
+    "cooperacion": 230925.87,
+    "no_homogeneas": 135259.15,
+    "homogenea": 4946153.74,
+    "homogenea_hab_ajustado": 3504.54,
+    "poblacion_ajustada": 1411358
+   },
+   "2023": {
+    "fg_aporta": 3345718.16,
+    "fg_recibe": 3691855.63,
+    "fg": 346137.48,
+    "fsg": 356029.26,
+    "competitividad": 0,
+    "cooperacion": 60876.2,
+    "no_homogeneas": 123456.4,
+    "homogenea": 5039667.88,
+    "homogenea_hab_ajustado": 3537.19,
+    "poblacion_ajustada": 1424768
+   },
+   "2024": {
+    "fg_aporta": 3662698.73,
+    "fg_recibe": 3997078.05,
+    "fg": 334379.31,
+    "fsg": 356524.71,
+    "competitividad": 0,
+    "cooperacion": 60128.9,
+    "no_homogeneas": 123628.2,
+    "homogenea": 5450874.14,
+    "homogenea_hab_ajustado": 3797.32,
+    "poblacion_ajustada": 1435453
+   }
+  },
+  "AS": {
+   "2022": {
+    "fg_aporta": 2233787.99,
+    "fg_recibe": 2742879.88,
+    "fg": 509091.89,
+    "fsg": 262409.35,
+    "competitividad": 0,
+    "cooperacion": 195408.17,
+    "no_homogeneas": 120167.36,
+    "homogenea": 3629717.87,
+    "homogenea_hab_ajustado": 3388.25,
+    "poblacion_ajustada": 1071267
+   },
+   "2023": {
+    "fg_aporta": 2300898.63,
+    "fg_recibe": 2781786.94,
+    "fg": 480888.31,
+    "fsg": 239511.45,
+    "competitividad": 0,
+    "cooperacion": 191439.99,
+    "no_homogeneas": 109681.53,
+    "homogenea": 3678583.07,
+    "homogenea_hab_ajustado": 3426.55,
+    "poblacion_ajustada": 1073553
+   },
+   "2024": {
+    "fg_aporta": 2471075.53,
+    "fg_recibe": 3005849.12,
+    "fg": 534773.59,
+    "fsg": 239844.75,
+    "competitividad": 0,
+    "cooperacion": 190427.75,
+    "no_homogeneas": 109834.16,
+    "homogenea": 3959551.56,
+    "homogenea_hab_ajustado": 3668.03,
+    "poblacion_ajustada": 1079477
+   }
+  },
+  "IB": {
+   "2022": {
+    "fg_aporta": 3245213.15,
+    "fg_recibe": 2990558.04,
+    "fg": -254655.1,
+    "fsg": -985588.78,
+    "competitividad": 989821.25,
+    "cooperacion": 0,
+    "no_homogeneas": 178990.25,
+    "homogenea": 2907716.72,
+    "homogenea_hab_ajustado": 2489.48,
+    "poblacion_ajustada": 1168001
+   },
+   "2023": {
+    "fg_aporta": 3364583.71,
+    "fg_recibe": 3080230.09,
+    "fg": -284353.63,
+    "fsg": -899586.05,
+    "competitividad": 912475.37,
+    "cooperacion": 0,
+    "no_homogeneas": 163371.52,
+    "homogenea": 3138800.42,
+    "homogenea_hab_ajustado": 2640.47,
+    "poblacion_ajustada": 1188728
+   },
+   "2024": {
+    "fg_aporta": 3714320.4,
+    "fg_recibe": 3373018.33,
+    "fg": -341302.07,
+    "fsg": -899643.57,
+    "competitividad": 914763.59,
+    "cooperacion": 0,
+    "no_homogeneas": 163598.87,
+    "homogenea": 3547882.7,
+    "homogenea_hab_ajustado": 2928.9,
+    "poblacion_ajustada": 1211337
+   }
+  },
+  "CN": {
+   "2022": {
+    "fg_aporta": 2143649.27,
+    "fg_recibe": 5683460.14,
+    "fg": 3539810.87,
+    "fsg": 104866.25,
+    "competitividad": 735103.88,
+    "cooperacion": 180830.23,
+    "no_homogeneas": 430936.15,
+    "homogenea": 6071940.0,
+    "homogenea_hab_ajustado": 2735.42,
+    "poblacion_ajustada": 2219749
+   },
+   "2023": {
+    "fg_aporta": 2295976.73,
+    "fg_recibe": 5816214.72,
+    "fg": 3520237.99,
+    "fsg": 96450.69,
+    "competitividad": 768883.63,
+    "cooperacion": 163233.78,
+    "no_homogeneas": 393332.56,
+    "homogenea": 6284658.42,
+    "homogenea_hab_ajustado": 2799.9,
+    "poblacion_ajustada": 2244605
+   },
+   "2024": {
+    "fg_aporta": 2596316.2,
+    "fg_recibe": 6329641.58,
+    "fg": 3733325.38,
+    "fsg": 96584.91,
+    "competitividad": 842710.39,
+    "cooperacion": 159866.77,
+    "no_homogeneas": 393879.91,
+    "homogenea": 6897785.31,
+    "homogenea_hab_ajustado": 3034.48,
+    "poblacion_ajustada": 2273136
+   }
+  },
+  "CB": {
+   "2022": {
+    "fg_aporta": 1393886.92,
+    "fg_recibe": 1517417.61,
+    "fg": 123530.69,
+    "fsg": 691208.32,
+    "competitividad": 0,
+    "cooperacion": 0,
+    "no_homogeneas": 205994.33,
+    "homogenea": 2467260.58,
+    "homogenea_hab_ajustado": 4163.12,
+    "poblacion_ajustada": 592647
+   },
+   "2023": {
+    "fg_aporta": 1420632.35,
+    "fg_recibe": 1545510.1,
+    "fg": 124877.75,
+    "fsg": 630893.31,
+    "competitividad": 0,
+    "cooperacion": 110653.77,
+    "no_homogeneas": 188019.21,
+    "homogenea": 2461928.31,
+    "homogenea_hab_ajustado": 4127.66,
+    "poblacion_ajustada": 596446
+   },
+   "2024": {
+    "fg_aporta": 1546009.88,
+    "fg_recibe": 1672924.95,
+    "fg": 126915.07,
+    "fsg": 631771.25,
+    "competitividad": 0,
+    "cooperacion": 111153.26,
+    "no_homogeneas": 188280.86,
+    "homogenea": 2631751.97,
+    "homogenea_hab_ajustado": 4380.49,
+    "poblacion_ajustada": 600790
+   }
+  },
+  "CL": {
+   "2022": {
+    "fg_aporta": 5257440.9,
+    "fg_recibe": 6595314.59,
+    "fg": 1337873.69,
+    "fsg": 610381.97,
+    "competitividad": 0,
+    "cooperacion": 446907.36,
+    "no_homogeneas": 24765.8,
+    "homogenea": 8933411.07,
+    "homogenea_hab_ajustado": 3468.09,
+    "poblacion_ajustada": 2575885
+   },
+   "2023": {
+    "fg_aporta": 5403311.02,
+    "fg_recibe": 6705477.05,
+    "fg": 1302166.03,
+    "fsg": 557119.88,
+    "competitividad": 0,
+    "cooperacion": 442759.95,
+    "no_homogeneas": 22604.73,
+    "homogenea": 9041095.88,
+    "homogenea_hab_ajustado": 3493.75,
+    "poblacion_ajustada": 2587790
+   },
+   "2024": {
+    "fg_aporta": 5905406.57,
+    "fg_recibe": 7249236.55,
+    "fg": 1343829.98,
+    "fsg": 557895.17,
+    "competitividad": 0,
+    "cooperacion": 443680.39,
+    "no_homogeneas": 22636.18,
+    "homogenea": 9752964.39,
+    "homogenea_hab_ajustado": 3746.26,
+    "poblacion_ajustada": 2603386
+   }
+  },
+  "CM": {
+   "2022": {
+    "fg_aporta": 3782305.14,
+    "fg_recibe": 5438810.66,
+    "fg": 1656505.52,
+    "fsg": 111352.22,
+    "competitividad": 0,
+    "cooperacion": 163149.54,
+    "no_homogeneas": 18403.7,
+    "homogenea": 6792527.56,
+    "homogenea_hab_ajustado": 3197.69,
+    "poblacion_ajustada": 2124198
+   },
+   "2023": {
+    "fg_aporta": 3877389.69,
+    "fg_recibe": 5568854.97,
+    "fg": 1691465.29,
+    "fsg": 101635.6,
+    "competitividad": 0,
+    "cooperacion": 142764.92,
+    "no_homogeneas": 16797.79,
+    "homogenea": 6946156.01,
+    "homogenea_hab_ajustado": 3232.06,
+    "poblacion_ajustada": 2149143
+   },
+   "2024": {
+    "fg_aporta": 4265328.13,
+    "fg_recibe": 6044267.22,
+    "fg": 1778939.09,
+    "fsg": 101777.03,
+    "competitividad": 0,
+    "cooperacion": 145014.37,
+    "no_homogeneas": 16821.17,
+    "homogenea": 7550999.13,
+    "homogenea_hab_ajustado": 3478.68,
+    "poblacion_ajustada": 2170651
+   }
+  },
+  "CT": {
+   "2022": {
+    "fg_aporta": 20838052.04,
+    "fg_recibe": 19536192.57,
+    "fg": -1301859.47,
+    "fsg": 1248437.92,
+    "competitividad": 1603750.66,
+    "cooperacion": 0,
+    "no_homogeneas": 3901463.99,
+    "homogenea": 23829183.85,
+    "homogenea_hab_ajustado": 3123.05,
+    "poblacion_ajustada": 7630111
+   },
+   "2023": {
+    "fg_aporta": 21651433.59,
+    "fg_recibe": 20043738.52,
+    "fg": -1607695.07,
+    "fsg": 1141049.51,
+    "competitividad": 1523186.99,
+    "cooperacion": 0,
+    "no_homogeneas": 3562571.84,
+    "homogenea": 24839360.72,
+    "homogenea_hab_ajustado": 3211.16,
+    "poblacion_ajustada": 7735318
+   },
+   "2024": {
+    "fg_aporta": 23530388.54,
+    "fg_recibe": 21837040.7,
+    "fg": -1693347.84,
+    "fsg": 1142846.45,
+    "competitividad": 1563285.33,
+    "cooperacion": 0,
+    "no_homogeneas": 3567738.55,
+    "homogenea": 27255611.43,
+    "homogenea_hab_ajustado": 3475.49,
+    "poblacion_ajustada": 7842239
+   }
+  },
+  "EX": {
+   "2022": {
+    "fg_aporta": 1722091.09,
+    "fg_recibe": 2829719.78,
+    "fg": 1107628.69,
+    "fsg": 627592.73,
+    "competitividad": 0,
+    "cooperacion": 218826.07,
+    "no_homogeneas": 12572.15,
+    "homogenea": 4018770.72,
+    "homogenea_hab_ajustado": 3636.29,
+    "poblacion_ajustada": 1105183
+   },
+   "2023": {
+    "fg_aporta": 1787866.93,
+    "fg_recibe": 2867076.03,
+    "fg": 1079209.1,
+    "fsg": 572828.83,
+    "competitividad": 0,
+    "cooperacion": 212562.88,
+    "no_homogeneas": 11475.1,
+    "homogenea": 4024385.4,
+    "homogenea_hab_ajustado": 3637.15,
+    "poblacion_ajustada": 1106467
+   },
+   "2024": {
+    "fg_aporta": 1977893.23,
+    "fg_recibe": 3090626.84,
+    "fg": 1112733.6,
+    "fsg": 573625.97,
+    "competitividad": 0,
+    "cooperacion": 211279.95,
+    "no_homogeneas": 11491.07,
+    "homogenea": 4312059.48,
+    "homogenea_hab_ajustado": 3885.01,
+    "poblacion_ajustada": 1109923
+   }
+  },
+  "GA": {
+   "2022": {
+    "fg_aporta": 5431826.35,
+    "fg_recibe": 7420622.05,
+    "fg": 1988795.7,
+    "fsg": 840548.51,
+    "competitividad": 0,
+    "cooperacion": 516524.17,
+    "no_homogeneas": 482237.94,
+    "homogenea": 9589541.41,
+    "homogenea_hab_ajustado": 3308.77,
+    "poblacion_ajustada": 2898219
+   },
+   "2023": {
+    "fg_aporta": 5664872.22,
+    "fg_recibe": 7532764.29,
+    "fg": 1867892.07,
+    "fsg": 767202.03,
+    "competitividad": 0,
+    "cooperacion": 509188.15,
+    "no_homogeneas": 440157.73,
+    "homogenea": 9748099.34,
+    "homogenea_hab_ajustado": 3353.25,
+    "poblacion_ajustada": 2907059
+   },
+   "2024": {
+    "fg_aporta": 6205711.7,
+    "fg_recibe": 8101654.41,
+    "fg": 1895942.71,
+    "fsg": 768269.67,
+    "competitividad": 0,
+    "cooperacion": 507905.07,
+    "no_homogeneas": 440770.25,
+    "homogenea": 10497724.39,
+    "homogenea_hab_ajustado": 3608.07,
+    "poblacion_ajustada": 2909511
+   }
+  },
+  "MD": {
+   "2022": {
+    "fg_aporta": 21913458.57,
+    "fg_recibe": 16744985.13,
+    "fg": -5168473.45,
+    "fsg": -1065114.27,
+    "competitividad": 487330.29,
+    "cooperacion": 0,
+    "no_homogeneas": 1648263.63,
+    "homogenea": 21336093.43,
+    "homogenea_hab_ajustado": 3262.41,
+    "poblacion_ajustada": 6539969
+   },
+   "2023": {
+    "fg_aporta": 22949295.56,
+    "fg_recibe": 17201674.26,
+    "fg": -5747621.3,
+    "fsg": -967270.21,
+    "competitividad": 249688.16,
+    "cooperacion": 0,
+    "no_homogeneas": 1509337.63,
+    "homogenea": 22374831.6,
+    "homogenea_hab_ajustado": 3370.46,
+    "poblacion_ajustada": 6638503
+   },
+   "2024": {
+    "fg_aporta": 25195626.56,
+    "fg_recibe": 18829982.12,
+    "fg": -6365644.44,
+    "fsg": -968616.26,
+    "competitividad": 164394.79,
+    "cooperacion": 0,
+    "no_homogeneas": 1511438.02,
+    "homogenea": 24748470.03,
+    "homogenea_hab_ajustado": 3659.76,
+    "poblacion_ajustada": 6762327
+   }
+  },
+  "MC": {
+   "2022": {
+    "fg_aporta": 2788310.73,
+    "fg_recibe": 3846758.95,
+    "fg": 1058448.22,
+    "fsg": -283240.28,
+    "competitividad": 148053.51,
+    "cooperacion": 118062.69,
+    "no_homogeneas": 29441.13,
+    "homogenea": 4463514.45,
+    "homogenea_hab_ajustado": 2970.92,
+    "poblacion_ajustada": 1502401
+   },
+   "2023": {
+    "fg_aporta": 2913978.87,
+    "fg_recibe": 3952165.26,
+    "fg": 1038186.39,
+    "fsg": -258524.66,
+    "competitividad": 160947.26,
+    "cooperacion": 104815.89,
+    "no_homogeneas": 26872.09,
+    "homogenea": 4638094.8,
+    "homogenea_hab_ajustado": 3040.92,
+    "poblacion_ajustada": 1525227
+   },
+   "2024": {
+    "fg_aporta": 3223952.09,
+    "fg_recibe": 4309378.28,
+    "fg": 1085426.19,
+    "fsg": -258884.42,
+    "competitividad": 173798.99,
+    "cooperacion": 106730.28,
+    "no_homogeneas": 26909.49,
+    "homogenea": 5098235.07,
+    "homogenea_hab_ajustado": 3294.27,
+    "poblacion_ajustada": 1547608
+   }
+  },
+  "RI": {
+   "2022": {
+    "fg_aporta": 708334.99,
+    "fg_recibe": 841052.56,
+    "fg": 132717.56,
+    "fsg": 299320.48,
+    "competitividad": 0,
+    "cooperacion": 57310.2,
+    "no_homogeneas": 112289.94,
+    "homogenea": 1264194.77,
+    "homogenea_hab_ajustado": 3848.57,
+    "poblacion_ajustada": 328484
+   },
+   "2023": {
+    "fg_aporta": 725017.65,
+    "fg_recibe": 857938.47,
+    "fg": 132920.82,
+    "fsg": 273201.7,
+    "competitividad": 0,
+    "cooperacion": 16451.27,
+    "no_homogeneas": 102491.49,
+    "homogenea": 1270321.24,
+    "homogenea_hab_ajustado": 3836.7,
+    "poblacion_ajustada": 331097
+   },
+   "2024": {
+    "fg_aporta": 805924.85,
+    "fg_recibe": 930437.21,
+    "fg": 124512.36,
+    "fsg": 273581.89,
+    "competitividad": 0,
+    "cooperacion": 16495.56,
+    "no_homogeneas": 102634.11,
+    "homogenea": 1370026.61,
+    "homogenea_hab_ajustado": 4100.11,
+    "poblacion_ajustada": 334144
+   }
+  },
+  "VC": {
+   "2022": {
+    "fg_aporta": 11059288.11,
+    "fg_recibe": 12662964.76,
+    "fg": 1603676.65,
+    "fsg": -2035223.65,
+    "competitividad": 1391009.34,
+    "cooperacion": 373170.12,
+    "no_homogeneas": 509101.39,
+    "homogenea": 13805069.09,
+    "homogenea_hab_ajustado": 2791.34,
+    "poblacion_ajustada": 4945684
+   },
+   "2023": {
+    "fg_aporta": 11323428.2,
+    "fg_recibe": 13108807.57,
+    "fg": 1785379.36,
+    "fsg": -1857629.51,
+    "competitividad": 1363412.81,
+    "cooperacion": 341056.02,
+    "no_homogeneas": 464677.08,
+    "homogenea": 14560977.05,
+    "homogenea_hab_ajustado": 2878.25,
+    "poblacion_ajustada": 5058976
+   },
+   "2024": {
+    "fg_aporta": 12466136.57,
+    "fg_recibe": 14378865.8,
+    "fg": 1912729.23,
+    "fsg": -1860214.58,
+    "competitividad": 1389836.2,
+    "cooperacion": 348484.97,
+    "no_homogeneas": 465323.72,
+    "homogenea": 16208706.36,
+    "homogenea_hab_ajustado": 3138.9,
+    "poblacion_ajustada": 5163818
+   }
+  }
+ },
+ "notas_sfa": {
+  "policia_ct": {
+   "anio": 2022,
+   "valor_2013": 1163364.26
   }
  }
 }

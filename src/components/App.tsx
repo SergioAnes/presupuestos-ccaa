@@ -3,11 +3,12 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   ANIOS, AREAS, CAPITULOS, CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, TRANSF_EJEMPLO, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
-  capitulosMiles, csv, depuracionDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
+  capitulosMiles, csv, depuracionDe, sfa, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
   type Ccaa, type Partida, type Unidad,
 } from "@/lib/datos";
 import { Icono } from "./Icono";
 import { Deuda, Evolucion, Ingresos } from "./Dinero";
+import { PorQue } from "./PorQue";
 
 const URL_ESTATUT = "https://www.boe.es/buscar/act.php?id=BOE-A-2006-13087";
 const COLOR: Record<Ccaa, string> = { MD: "var(--s1)", CT: "var(--s2)" };
@@ -18,7 +19,7 @@ type Vista = "resumen" | "gasto" | "ingresos" | "metodo";
 const VISTAS: { id: Vista; nombre: string }[] = [
   { id: "resumen", nombre: "Resumen" },
   { id: "gasto", nombre: "En qué gastan" },
-  { id: "ingresos", nombre: "Ingresos y deuda" },
+  { id: "ingresos", nombre: "Ingresos y financiación" },
   { id: "metodo", nombre: "Cómo leer los datos" },
 ];
 interface Estado { vista: Vista; anio: number; u: Unidad; ficha: string | null }
@@ -108,7 +109,7 @@ function Compartir() {
 }
 
 // ---------- tarjetas ----------
-function Tarjetas({ anio, u }: { anio: number; u: Unidad }) {
+function Tarjetas({ anio, u, verPorQue }: { anio: number; u: Unidad; verPorQue: () => void }) {
   const r = { MD: resumen("MD", anio), CT: resumen("CT", anio) };
   const mill = u === "mill";
   const unidad: Unidad = mill ? "mill" : "hab";
@@ -118,6 +119,10 @@ function Tarjetas({ anio, u }: { anio: number; u: Unidad }) {
   const sin13 = (c: Ccaa) => ((r[c].gasto - gastoMiles(c, anio, "13")) * 1000) / r[c].poblacion;
   const pctSin13 = (sin13("CT") / sin13("MD") - 1) * 100;
   const masHab = (r.CT.poblacion / r.MD.poblacion - 1) * 100;
+  const fa = { MD: sfa("MD", anio), CT: sfa("CT", anio) };
+  const ajSin = fa.MD && fa.CT
+    ? (((r.CT.gasto - gastoMiles("CT", anio, "13")) / fa.CT.poblacion_ajustada) / ((r.MD.gasto - gastoMiles("MD", anio, "13")) / fa.MD.poblacion_ajustada) - 1) * 100
+    : null;
   return (
     <div className="kpis">
       {CCAA.map((c) => (
@@ -132,7 +137,9 @@ function Tarjetas({ anio, u }: { anio: number; u: Unidad }) {
         <span className="kpi-v num">{fmtDif(v("CT") - v("MD"), unidad)} <small>({fmtPct(pct)} por habitante)</small></span>
         <span className="kpi-s">
           Sin seguridad y prisiones, que solo gestiona Cataluña: {fmtPct(pctSin13)}.
+          {ajSin !== null && <> Por habitante ajustado (edad y reparto de la población) y sin seguridad y prisiones: {fmtPct(ajSin)}.</>}
           {mill ? ` Cataluña tiene un ${fmtNum(masHab)} % más de habitantes.` : ""}
+          {" "}<button className="enlace" onClick={verPorQue}>¿Por qué?</button>
         </span>
       </div>
     </div>
@@ -685,7 +692,7 @@ export function App() {
         </div>}
 
         {vista === "resumen" && <>
-        <Tarjetas anio={anio} u={u} />
+        <Tarjetas anio={anio} u={u} verPorQue={() => { cambiar({ vista: "ingresos" }); setTimeout(() => document.getElementById("porque")?.scrollIntoView(), 50); }} />
         <details className="pliegue">
           <summary>Qué cuenta este gasto (4 puntos)</summary>
           <div className="pliegue-c">
@@ -737,6 +744,7 @@ export function App() {
         </>}
 
         {vista === "ingresos" && <>
+        <PorQue a="MD" b="CT" anio={anio} />
         <Ingresos anio={anio} u={u} />
         <Deuda anio={anio} u={u} />
         <Evolucion anio={anio} />
@@ -781,6 +789,11 @@ function Metodo() {
         «¿De dónde sale el dinero?» usa la descarga «Ingresos y Gastos por capítulos» y la evolución, la «Serie Consolidados» (por capítulos, 1984-2024;
         aquí desde 2002). La deuda acumulada es la del <a href={FUENTE.deuda_url}>Banco de España</a> (Boletín Estadístico, cuadro 13.9: deuda según el
         Protocolo de Déficit Excesivo), a 31 de diciembre.
+      </p>
+      <p>
+        «¿Por qué … gasta más que …?» usa además los cuadros de la <a href={FUENTE.sfa_url}>liquidación del sistema de financiación</a> de Hacienda (las 15
+        comunidades de régimen común): Fondo de Garantía, Fondo de Suficiencia, fondos de Competitividad y Cooperación, la valoración de las competencias que no
+        tienen todas y la población ajustada. País Vasco y Navarra tienen su propio sistema (concierto y convenio) y no están.
       </p>
       <h3>Qué se compara</h3>
       <ul>

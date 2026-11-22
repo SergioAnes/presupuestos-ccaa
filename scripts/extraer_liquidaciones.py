@@ -8,6 +8,9 @@ Cada fichero se identifica por su contenido (año y comunidad), no por el nombre
   - «Organismos y Entidades incluidos consolidación» (DescargaOrganismosDC*.xlsx): perímetro.
   - «Ingresos y Gastos por capítulos» (DescargaEconomicaDC*.xlsx): derechos y obligaciones reconocidos por capítulo.
   - «Serie Consolidados» (DescargaSeriesDC*.xlsx): ingresos y gastos por capítulo, 1984-último año.
+Sistema de financiación: cuadros de la liquidación de los recursos del sistema de financiación de las CCAA de régimen
+común (datos-originales/liquidacion-sfa/cuadros-liquidacion-AAAA.xlsx), las 15 comunidades: Fondo de Garantía,
+Fondo de Suficiencia Global, Fondos de Competitividad y Cooperación, competencias no homogéneas y financiación homogénea.
 Población: INE, Estadística Continua de Población, 1 de julio (series ECP115490 y ECP115494 de la tabla 56940,
 datos-originales/ine/). Deuda: Banco de España, Boletín Estadístico, cuadro 13.9 (deuda según el PDE por CCAA,
 miles de euros), saldo a 31 de diciembre (datos-originales/bde/be1309.csv).
@@ -272,6 +275,78 @@ anios_serie = sorted(set.intersection(*[set(serie[c]["gastos"]) for c in serie])
 for ccaa, anio in claves:
     comprobar(str(anio) in poblacion.get(ccaa, {}), f"Falta la población a 1 de julio de {ccaa} {anio}")
 
+# Sistema de financiación (régimen común): las 15 comunidades, todos los años descargados
+SFA_NOMBRES = {
+    "AN": "andaluc", "AR": "arag", "AS": "asturias", "IB": "balears", "CN": "canarias", "CB": "cantabria",
+    "CL": "castilla y le", "CM": "mancha", "CT": "catalu", "EX": "extremadura", "GA": "galicia", "MD": "madrid",
+    "MC": "murcia", "RI": "rioja", "VC": "valencia",
+}
+
+
+def sfa_hoja(wb, *claves):
+    return next((ws for ws in wb.worksheets if all(k in ws.title for k in claves)), None)
+
+
+def sfa_filas(ws):
+    """{id_ccaa: [valores numéricos de la fila]} y la fila de total."""
+    out, total = {}, None
+    for r in ws.iter_rows(values_only=True):
+        if not r or r[0] is None:
+            continue
+        nom = texto(r[0]).lower()
+        nums = [x for x in r[1:] if isinstance(x, (int, float))]
+        if not nums:
+            continue
+        if nom.startswith("total"):
+            total = total or nums
+            continue
+        for cid, clave in SFA_NOMBRES.items():
+            if clave in nom:
+                out[cid] = nums
+    return out, total
+
+
+financiacion = {}
+notas_sfa = {}
+for ruta in sorted(glob.glob(os.path.join(ORIGEN, "liquidacion-sfa", "cuadros-liquidacion-*.xlsx"))):
+    anio = int(re.search(r"(\d{4})", os.path.basename(ruta)).group(1))
+    wb = openpyxl.load_workbook(ruta, data_only=True, read_only=True)
+    fg, fg_t = sfa_filas(sfa_hoja(wb, "Liq TFG"))
+    fs, fs_t = sfa_filas(sfa_hoja(wb, "Fondo de Suficiencia"))
+    rf, _ = sfa_filas(sfa_hoja(wb, "Recursos financieros"))
+    fh, _ = sfa_filas(sfa_hoja(wb, "Finan homog"))
+    ld, _ = sfa_filas(sfa_hoja(wb, "Liquidación definitiva"))
+    for cid in SFA_NOMBRES:
+        comprobar(all(cid in t for t in (fg, fs, rf, fh, ld)), f"Liquidación SFA {anio}: falta {cid}")
+    if errores:
+        sys.exit("\n".join(errores))
+    comprobar(abs(sum(v[3] for v in fg.values()) - fg_t[3]) < 15, f"Liquidación SFA {anio}: el Fondo de Garantía no suma el total")
+    for cid in SFA_NOMBRES:
+        cap, tfg, fsg, rec = rf[cid][0], rf[cid][1], rf[cid][2], rf[cid][-1]
+        comprobar(abs(cap + tfg + fsg - rec) < 5, f"Liquidación SFA {anio} {cid}: capacidad + Fondo de Garantía + Suficiencia ≠ recursos")
+        comprobar(abs(tfg - fg[cid][3]) < 1 and abs(fsg - fs[cid][-3]) < 1, f"Liquidación SFA {anio} {cid}: cuadros incoherentes")
+        comprobar(abs(fh[cid][0] - rec) < 1 and abs(fh[cid][0] - fh[cid][1] - fh[cid][2]) < 5, f"Liquidación SFA {anio} {cid}: financiación homogénea incoherente")
+        financiacion.setdefault(cid, {})[str(anio)] = {
+            "fg_aporta": round(fg[cid][2], 2),  # 75 % de los recursos tributarios
+            "fg_recibe": round(fg[cid][1], 2),  # participación en el Fondo de Garantía
+            "fg": round(tfg, 2),
+            "fsg": round(fsg, 2),
+            "competitividad": round(ld[cid][6], 2),
+            "cooperacion": round(ld[cid][7], 2) if len(ld[cid]) > 8 else 0.0,
+            "no_homogeneas": round(fh[cid][1], 2),
+            "homogenea": round(fh[cid][2], 2),
+            "homogenea_hab_ajustado": round(fh[cid][4], 2),
+            "poblacion_ajustada": round(fh[cid][2] / fh[cid][4] * 1000),
+        }
+    pol = sfa_hoja(wb, "Integrac.Pol.Cat")
+    if pol:
+        filas_pol, _ = sfa_filas(pol)
+        if "CT" in filas_pol:
+            notas_sfa["policia_ct"] = {"anio": anio, "valor_2013": round(filas_pol["CT"][1], 2)}
+    ficheros[("sfa", "todas", anio)] = os.path.basename(ruta)
+for ccaa, anio in claves:
+    comprobar(str(anio) in financiacion.get(ccaa, {}), f"Falta la liquidación del sistema de financiación de {anio}")
+
 # Deuda (Banco de España, cuadro 13.9, miles de euros), saldo a 31 de diciembre
 import csv as _csv
 deuda = {}
@@ -300,6 +375,8 @@ salida = {
         "poblacion_url": "https://www.ine.es/jaxiT3/Tabla.htm?t=56940",
         "deuda": "Banco de España, Boletín Estadístico, cuadro 13.9: deuda según el Protocolo de Déficit Excesivo por comunidades autónomas, saldo a 31 de diciembre",
         "deuda_url": "https://www.bde.es/webbe/es/estadisticas/otras-clasificaciones/publicaciones/boletin-estadistico/capitulo-13.html",
+        "sfa": "Ministerio de Hacienda, liquidación de los recursos del sistema de financiación de las CCAA de régimen común (cuadros)",
+        "sfa_url": "https://www.hacienda.gob.es/es-ES/CDI/Paginas/SistemasFinanciacionDeuda/InformacionCCAAs/Informes%20financiacion%20comunidades%20autonomas2.aspx",
     },
     "anios": sorted({a for _, a in claves}),
     "areas": [{"id": a, "nombre": nombres[a]} for a in areas],
@@ -311,6 +388,8 @@ salida = {
     "economica": {c: {str(a): v for (cc, a), v in sorted(economica.items()) if cc == c} for c in sorted({c for c, _ in economica})},
     "serie": {c: {k: {str(a): [round(x, 2) for x in v] for a, v in sorted(d[k].items()) if a >= 2002} for k in ("ingresos", "gastos")} for c, d in serie.items()},
     "deuda": {c: {a: v for a, v in sorted(d.items()) if int(a) >= 2002} for c, d in deuda.items()},
+    "financiacion": financiacion,
+    "notas_sfa": notas_sfa,
 }
 os.makedirs(os.path.dirname(DESTINO), exist_ok=True)
 with open(DESTINO, "w", encoding="utf-8") as f:
