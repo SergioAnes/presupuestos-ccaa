@@ -26,6 +26,7 @@ Primera versión: Madrid y Cataluña, 2022 y 2024. Proyecto hermano de `sanidad-
 - Gasto comparado = obligaciones depuradas de IFL y PAC − capítulo 8 − capítulo 9 (la deuda queda en intereses).
   Gasto comparado + cap. 9 + cap. 8 + IFL/PAC = total de Hacienda (lo comprueban los tests).
 - Política 13 (seguridad y prisiones): competencias distintas (Estatut arts. 164 y 168), se marca «≠ competencias».
+  En Madrid las paga el Estado; no imputar estimaciones del gasto estatal (cuentas territorializadas: supuestos de reparto).
 - Diputaciones: Madrid es uniprovincial; las cuatro catalanas no están en estas cifras. Se avisa en el método.
 - La tabla del tuit que inspiró la web (28.142.468 / 47.156.287, 2022) no se reproduce con los datos publicados hoy.
 - `datos-originales/` no se sube a git.
