@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  ECONOMICA, FUENTE, NOMBRE, NOTAS_SFA, POLITICAS, aniosComparables, depuracionDe, fmtNum, gastoMiles, homogeneaConFondos,
+  COLOR_CCAA, ECONOMICA, FUENTE, NOMBRE, NOTAS_SFA, POLITICAS, aniosComparables, depuracionDe, fmtNum, gastoMiles, homogeneaConFondos,
   poblacion, resumen, saldoSistema, sfa, singularesDe,
   type Ccaa,
 } from "@/lib/datos";
@@ -11,7 +11,7 @@ import {
  * Solo hechos contables y cifras oficiales (o cálculos propios con ellas, dichos como tales). Sin explicar causas.
  */
 
-const COLOR: Record<Ccaa, string> = { MD: "var(--s1)", CT: "var(--s2)" };
+const COLOR = COLOR_CCAA;
 const nf = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0, useGrouping: "always" } as Intl.NumberFormatOptions);
 const e = (v: number) => `${nf.format(v)} €`;
 const ed = (v: number) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${nf.format(Math.abs(v))} €`;

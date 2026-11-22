@@ -57,8 +57,30 @@ const CORTO: Record<string, string> = {
   "95": "Deuda pública (intereses)",
 };
 
-/** Políticas en las que las dos comunidades no tienen las mismas competencias. */
-export const COMPETENCIA_DISTINTA = new Set(["13"]);
+/**
+ * Políticas en las que cada comunidad tiene competencias que otras no tienen (se quitan al comparar
+ * «a competencias homogéneas»). Al añadir comunidades: País Vasco y Navarra también tienen policía propia.
+ */
+export const COMPETENCIAS_SINGULARES: Record<string, string[]> = { CT: ["13"] };
+/** Políticas con competencias distintas en la pareja comparada (se marcan «≠ competencias»). */
+export const COMPETENCIA_DISTINTA = new Set(CCAA.flatMap((c) => COMPETENCIAS_SINGULARES[c] ?? []));
+
+/** Explicación de cada competencia singular: qué tiene la comunidad y qué pasa en las que no la tienen. */
+export const COMPETENCIA_NOTA: Record<string, Record<string, { tiene: string; fuente: { texto: string; url: string }; sinElla: string }>> = {
+  CT: {
+    "13": {
+      tiene: "tiene policía propia (Mossos d'Esquadra) y gestiona sus prisiones",
+      fuente: { texto: "Estatuto de Autonomía, arts. 164 y 168", url: "https://www.boe.es/buscar/act.php?id=BOE-A-2006-13087" },
+      sinElla: "la Policía Nacional, la Guardia Civil y las prisiones las paga el Estado con los impuestos generales, y ese gasto no pasa por el presupuesto de la comunidad",
+    },
+  },
+};
+/** Para una política con competencias distintas: quién la tiene y quién no, en la pareja comparada. */
+export function notasCompetencia(id: string): { quien: Ccaa; otras: Ccaa[]; nota: (typeof COMPETENCIA_NOTA)[string][string] }[] {
+  return CCAA.filter((c) => COMPETENCIA_NOTA[c]?.[id]).map((c) => ({ quien: c, otras: CCAA.filter((o) => !COMPETENCIA_NOTA[o]?.[id]), nota: COMPETENCIA_NOTA[c][id] }));
+}
+/** Color de cada comunidad según su posición en la comparación (primera azul, segunda naranja). */
+export const COLOR_CCAA: Record<Ccaa, string> = Object.fromEntries(CCAA.map((c, i) => [c, i === 0 ? "var(--s1)" : "var(--s2)"])) as Record<Ccaa, string>;
 
 export interface Partida {
   id: string;
@@ -283,11 +305,6 @@ export const saldoSistema = (f: Financiacion) => f.fg + f.fsg + f.competitividad
 /** Financiación homogénea por habitante ajustado incluidos los fondos de convergencia (cálculo propio, €). */
 export const homogeneaConFondos = (f: Financiacion) => ((f.homogenea + f.competitividad + f.cooperacion) * 1000) / f.poblacion_ajustada;
 
-/**
- * Políticas en las que cada comunidad tiene competencias que otras no tienen (se quitan al comparar
- * «a competencias homogéneas»). Al añadir comunidades: País Vasco y Navarra también tienen policía propia.
- */
-export const COMPETENCIAS_SINGULARES: Record<string, string[]> = { CT: ["13"] };
 export const singularesDe = (a: Ccaa, b: Ccaa) => [...new Set([...(COMPETENCIAS_SINGULARES[a] ?? []), ...(COMPETENCIAS_SINGULARES[b] ?? [])])];
 /** Años con gasto y liquidación del sistema para las dos comunidades. */
 export const aniosComparables = (a: Ccaa, b: Ccaa) => ANIOS.filter((y) => sfa(a, y) && sfa(b, y));
@@ -304,3 +321,28 @@ export function habPartida(c: Ccaa, anio: number, id: string, real?: number): nu
   const v = (miles * 1000) / poblacion(c, anio);
   return real ? aEurosDe(v, anio, real) : v;
 }
+
+// ---------- variaciones inusuales (criterio fijo; la fuente no las explica) ----------
+/**
+ * Con solo dos comunidades no se puede comparar con «lo que hicieron las demás» como en sanidad-ccaa. Criterio:
+ * cambio del gasto por habitante de una política respecto al año anterior, sin inflación, de al menos un 30 %
+ * y de al menos 10 € por habitante (y gasto de partida ≥ MIN_HAB_PCT). Al añadir comunidades, pasar a la z robusta.
+ */
+export const INUSUAL = { pct: 30, eur: 10 };
+export interface Inusual { ccaa: Ccaa; anio: number; politica: string; antes: number; despues: number; pct: number }
+export const INUSUALES: Inusual[] = (() => {
+  const ult = ANIOS[ANIOS.length - 1];
+  const out: Inusual[] = [];
+  for (const c of CCAA)
+    for (let i = 1; i < ANIOS.length; i++)
+      for (const p of POLITICAS) {
+        const antes = habPartida(c, ANIOS[i - 1], p.id, ult), despues = habPartida(c, ANIOS[i], p.id, ult);
+        if (antes < MIN_HAB_PCT) continue;
+        const pct = (despues / antes - 1) * 100;
+        if (Math.abs(pct) >= INUSUAL.pct && Math.abs(despues - antes) >= INUSUAL.eur) out.push({ ccaa: c, anio: ANIOS[i], politica: p.id, antes, despues, pct });
+      }
+  return out;
+})();
+/** Variaciones inusuales de una comunidad y política dentro de un periodo (años posteriores a y0, hasta y1). */
+export const inusualesEn = (c: Ccaa, id: string, y0: number, y1: number) =>
+  INUSUALES.filter((v) => v.ccaa === c && v.politica === id && v.anio > y0 && v.anio <= y1);

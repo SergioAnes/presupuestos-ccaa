@@ -2,14 +2,14 @@
 
 import { Fragment, useState } from "react";
 import {
-  ANIOS, AREAS, CCAA, IPC, IPC_FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, habPartida,
+  ANIOS, AREAS, CCAA, COLOR_CCAA, INUSUAL, INUSUALES, IPC, IPC_FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, habPartida, inusualesEn,
   type Ccaa, type Partida,
 } from "@/lib/datos";
 import { Icono } from "./Icono";
 
 /** «Cómo ha cambiado»: variación del gasto por habitante de cada política entre dos años, en euros corrientes o constantes. */
 
-const COLOR: Record<Ccaa, string> = { MD: "var(--s1)", CT: "var(--s2)" };
+const COLOR = COLOR_CCAA;
 const nf = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0, useGrouping: "always" } as Intl.NumberFormatOptions);
 const nf1 = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 const signo = (v: number) => (v > 0 ? "+" : v < 0 ? "−" : "");
@@ -17,7 +17,7 @@ const eur = (v: number) => `${nf.format(v)} €`;
 const dEur = (v: number) => (Math.abs(v) < 0.05 ? "0 €" : `${signo(v)}${Math.abs(v) < 9.95 ? nf1.format(Math.abs(v)) : nf.format(Math.abs(v))} €`);
 const dPct = (v: number) => (Math.abs(v) < 0.5 ? "0 %" : `${signo(v)}${nf.format(Math.abs(v))} %`);
 
-type Orden = "partidas" | "MD" | "CT";
+type Orden = "partidas" | Ccaa;
 
 export function Cambios({ abrir }: { abrir: (id: string) => void }) {
   const ult = ANIOS[ANIOS.length - 1];
@@ -45,11 +45,12 @@ export function Cambios({ abrir }: { abrir: (id: string) => void }) {
     POLITICAS.map((p) => ({ p, d: cambio(orden, p.id).d })).sort((a, b) => b.d - a.d).forEach(({ p }) => filas.push({ p, nivel: 1 }));
   }
   const maxD = Math.max(...POLITICAS.flatMap((p) => CCAA.map((c) => Math.abs(cambio(c, p.id).d))), 1);
-  const tot = { MD: cambio("MD", "T"), CT: cambio("CT", "T") };
+  const tot = Object.fromEntries(CCAA.map((c) => [c, cambio(c, "T")])) as Record<Ccaa, ReturnType<typeof cambio>>;
   const precios = (IPC[String(y1)] / IPC[String(y0)] - 1) * 100;
 
   const Celda = ({ c, id, fuerte }: { c: Ccaa; id: string; fuerte?: boolean }) => {
     const r = cambio(c, id);
+    const inus = id === "T" ? [] : inusualesEn(c, id, y0, y1);
     const ancho = Math.min(50, (Math.abs(r.d) / maxD) * 50);
     return (
       <td className={`cb-c${fuerte ? " fuerte" : ""}`} title={`${NOMBRE[c]}: ${eur(r.a)} en ${y0} → ${eur(r.b)} en ${y1}`}>
@@ -58,7 +59,10 @@ export function Cambios({ abrir }: { abrir: (id: string) => void }) {
             <span className="cb-eje" />
             <span className="cb-barra" style={{ left: r.d >= 0 ? "50%" : `${50 - ancho}%`, width: `max(2px, ${ancho}%)`, background: COLOR[c] }} />
           </span>
-          <span className="cb-v num">{dEur(r.d)} <small>{isNaN(r.p) ? "" : `(${dPct(r.p)})`}</small></span>
+          <span className="cb-v num">
+            {inus.length > 0 && <span className="cb-inus" title={`Variación inusual: ${inus.map((v) => `${v.anio} ${dPct(v.pct)}`).join(", ")}`}>!</span>}
+            {dEur(r.d)} <small>{isNaN(r.p) ? "" : `(${dPct(r.p)})`}</small>
+          </span>
         </div>
       </td>
     );
@@ -92,8 +96,7 @@ export function Cambios({ abrir }: { abrir: (id: string) => void }) {
         <span>Ordenar:</span>
         <div className="seg sm" role="group" aria-label="Ordenar">
           <button aria-pressed={orden === "partidas"} onClick={() => setOrden("partidas")}>Por áreas</button>
-          <button aria-pressed={orden === "MD"} onClick={() => setOrden("MD")}>Más sube en Madrid</button>
-          <button aria-pressed={orden === "CT"} onClick={() => setOrden("CT")}>Más sube en Cataluña</button>
+          {CCAA.map((c) => <button key={c} aria-pressed={orden === c} onClick={() => setOrden(c)}>Más sube en {NOMBRE[c]}</button>)}
         </div>
       </div>
       <div className="tabla-wrap">
@@ -118,6 +121,21 @@ export function Cambios({ abrir }: { abrir: (id: string) => void }) {
           </tfoot>
         </table>
       </div>
+      {INUSUALES.length > 0 && (
+        <details className="pliegue">
+          <summary><span className="cb-inus">!</span> Variaciones inusuales ({INUSUALES.length})</summary>
+          <div className="pliegue-c">
+            <p>Cambios del gasto por habitante de una política respecto al año anterior, sin inflación, de al menos un {INUSUAL.pct} % y {INUSUAL.eur} € por habitante. Es un criterio fijo: la cifra es oficial, pero la fuente no explica el cambio y aquí tampoco se explica.</p>
+            <ul>
+              {INUSUALES.map((v) => (
+                <li key={`${v.ccaa}-${v.anio}-${v.politica}`}>
+                  <button className="enlace" onClick={() => abrir(v.politica)}>{POLITICAS.find((p) => p.id === v.politica)?.nombre}</button>, {NOMBRE[v.ccaa]}, {v.anio}: {eur(v.antes)} → {eur(v.despues)} por habitante ({dPct(v.pct)})
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
+      )}
       <details className="pliegue">
         <summary>Cómo leerlo (3 puntos)</summary>
         <div className="pliegue-c">
@@ -135,14 +153,15 @@ export function Cambios({ abrir }: { abrir: (id: string) => void }) {
 /** Gráfico pequeño de la evolución de una partida en la ficha (euros de cada año). */
 export function MiniEvolucion({ id }: { id: string }) {
   if (ANIOS.length < 2) return null;
-  const s = { MD: ANIOS.map((y) => habPartida("MD", y, id)), CT: ANIOS.map((y) => habPartida("CT", y, id)) };
+  const s = Object.fromEntries(CCAA.map((c) => [c, ANIOS.map((y) => habPartida(c, y, id))])) as Record<Ccaa, number[]>;
   const W = 560, H = 130, L = 10, R = 74, T = 12, B = 22;
   const max = Math.max(...s.MD, ...s.CT) || 1;
   const x = (i: number) => L + (i / (ANIOS.length - 1)) * (W - L - R);
   const y = (v: number) => T + (1 - v / max) * (H - T - B);
   const n = ANIOS.length - 1;
-  const yEt = { MD: y(s.MD[n]), CT: y(s.CT[n]) };
-  if (Math.abs(yEt.MD - yEt.CT) < 14) { const m = (yEt.MD + yEt.CT) / 2, arr = yEt.MD <= yEt.CT ? -1 : 1; yEt.MD = m + arr * 7; yEt.CT = m - arr * 7; }
+  const [c1, c2] = CCAA;
+  const yEt = Object.fromEntries(CCAA.map((c) => [c, y(s[c][n])])) as Record<Ccaa, number>;
+  if (Math.abs(yEt[c1] - yEt[c2]) < 14) { const m = (yEt[c1] + yEt[c2]) / 2, arr = yEt[c1] <= yEt[c2] ? -1 : 1; yEt[c1] = m + arr * 7; yEt[c2] = m - arr * 7; }
   return (
     <div className="mini-evo">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Evolución ${ANIOS[0]}-${ANIOS[ANIOS.length - 1]}: ` + CCAA.map((c) => `${NOMBRE[c]} ${s[c].map((v) => eur(v)).join(", ")}`).join("; ")}>
@@ -151,7 +170,15 @@ export function MiniEvolucion({ id }: { id: string }) {
         {CCAA.map((c) => (
           <g key={c}>
             <polyline points={s[c].map((v, i) => `${x(i)},${y(v)}`).join(" ")} fill="none" stroke={COLOR[c]} strokeWidth="2.2" strokeLinejoin="round" />
-            {s[c].map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r="3.5" fill={COLOR[c]} stroke="var(--surface)" strokeWidth="1.5"><title>{`${NOMBRE[c]} ${ANIOS[i]}: ${eur(v)}`}</title></circle>)}
+            {s[c].map((v, i) => {
+              const inus = INUSUALES.some((x) => x.ccaa === c && x.politica === id && x.anio === ANIOS[i]);
+              return (
+                <g key={i}>
+                  {inus && <circle cx={x(i)} cy={y(v)} r="8" fill="none" stroke="var(--note)" strokeWidth="2" />}
+                  <circle cx={x(i)} cy={y(v)} r="3.5" fill={COLOR[c]} stroke="var(--surface)" strokeWidth="1.5"><title>{`${NOMBRE[c]} ${ANIOS[i]}: ${eur(v)}${inus ? " · variación inusual" : ""}`}</title></circle>
+                </g>
+              );
+            })}
             <text x={x(n) + 8} y={yEt[c] + 4} fontSize="11.5" fontWeight="700" fill="var(--fg)">{eur(s[c][s[c].length - 1])}</text>
           </g>
         ))}

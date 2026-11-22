@@ -21,6 +21,12 @@ Primera versión: Madrid y Cataluña, 2022, 2023 y 2024. Proyecto hermano de `sa
   política entre dos años, «sin inflación» (euros del último año) o euros de cada año; la ficha lleva un minigráfico
   2022-2024. IPC general nacional, media anual (`python scripts/extraer_ipc.py`, igual que sanidad-ccaa); la evolución
   desde 2002 también tiene el interruptor. Saltos grandes: sin explicarlos (la fuente no lo hace).
+- Pareja comparada genérica: en `App.tsx`, `const [A, B] = CCAA` (A base: «B menos A»); colores por posición
+  (`COLOR_CCAA`); competencias singulares y sus textos en `COMPETENCIAS_SINGULARES` y `COMPETENCIA_NOTA` (`datos.ts`).
+  No escribir nombres de comunidades a mano en los componentes (salvo notas que son de una comunidad, como los Mossos).
+- Variaciones inusuales (`INUSUALES` en `datos.ts`): cambio de una política respecto al año anterior, sin inflación,
+  ≥ 30 % y ≥ 10 € por habitante. Se marcan con «!» en «Cómo ha cambiado», en la ficha y en su minigráfico; sin explicarlas.
+  Con más comunidades, pasar al criterio de sanidad-ccaa (z robusta frente a las demás).
 - Selector de unidad: € por habitante o millones (el «% de su gasto» lo cubre «De cada 100 €»). Botón «Compartir».
 - Iconos propios en `src/components/Icono.tsx`. Colores de áreas `--a1…--a9` (validados para daltonismo en ese orden).
 - `public/og.png`: vista previa al compartir (captura 1200×630 de la cabecera); regenerarla si cambia mucho el diseño.

@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  ANIOS_SERIE, CCAA, DEUDA, ECONOMICA, FUENTE, NOMBRE, SERIE, aEurosDe, fmt, porHab,
+  ANIOS_SERIE, CCAA, COLOR_CCAA, DEUDA, ECONOMICA, FUENTE, NOMBRE, SERIE, aEurosDe, fmt, porHab,
   type Ccaa, type Unidad,
 } from "@/lib/datos";
 
-const COLOR: Record<Ccaa, string> = { MD: "var(--s1)", CT: "var(--s2)" };
+const COLOR = COLOR_CCAA;
 
 interface Par { id: string; nombre: string; ayuda?: string; v: Record<Ccaa, number>; fuerte?: boolean }
 
@@ -48,7 +48,7 @@ function FilasPar({ filas, u, anio }: { filas: Par[]; u: Unidad; anio: number })
 }
 
 const suma = (xs: number[], ...idx: number[]) => idx.reduce((s, i) => s + (xs[i] ?? 0), 0);
-const porCcaa = (fn: (c: Ccaa) => number) => ({ MD: fn("MD"), CT: fn("CT") });
+const porCcaa = (fn: (c: Ccaa) => number) => Object.fromEntries(CCAA.map((c) => [c, fn(c)])) as Record<Ccaa, number>;
 
 // ---------- de dónde sale el dinero ----------
 export function Ingresos({ anio, u }: { anio: number; u: Unidad }) {
@@ -159,7 +159,7 @@ export function Evolucion({ anio }: { anio: number }) {
   if (anios.length < 2) return null;
   const ultimoAnio = anios[anios.length - 1];
   const serie = (c: Ccaa) => anios.map((a) => { const v = m.f(c, a); if (v === undefined) return null; const h = porHab(v, c, a); return real ? aEurosDe(h, a, ultimoAnio) : h; });
-  const s = { MD: serie("MD"), CT: serie("CT") };
+  const s = Object.fromEntries(CCAA.map((c) => [c, serie(c)])) as Record<Ccaa, (number | null)[]>;
   const W = Math.max(300, ancho), H = W < 500 ? 220 : 260, L = 44, R = 66, T = 12, B = 26;
   const vals = [...s.MD, ...s.CT].filter((v): v is number => v !== null);
   const paso = (() => { const bruto = Math.max(...vals) / 4; const p = 10 ** Math.floor(Math.log10(bruto || 1)); return [1, 2, 2.5, 5, 10].map((k) => k * p).find((k) => k >= bruto) ?? p * 10; })();
@@ -172,8 +172,9 @@ export function Evolucion({ anio }: { anio: number }) {
   const nf = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0, useGrouping: "always" } as Intl.NumberFormatOptions);
   const ultimo = (c: Ccaa) => { for (let i = anios.length - 1; i >= 0; i--) if (s[c][i] !== null) return i; return -1; };
   // Etiquetas finales sin solaparse
-  const yEt = { MD: y(s.MD[ultimo("MD")] ?? 0), CT: y(s.CT[ultimo("CT")] ?? 0) };
-  if (Math.abs(yEt.MD - yEt.CT) < 16) { const mid = (yEt.MD + yEt.CT) / 2; const arr = yEt.MD < yEt.CT ? -1 : 1; yEt.MD = mid + arr * 8; yEt.CT = mid - arr * 8; }
+  const [k1, k2] = CCAA;
+  const yEt = Object.fromEntries(CCAA.map((c) => [c, y(s[c][ultimo(c)] ?? 0)])) as Record<Ccaa, number>;
+  if (Math.abs(yEt[k1] - yEt[k2]) < 16) { const mid = (yEt[k1] + yEt[k2]) / 2; const arr = yEt[k1] < yEt[k2] ? -1 : 1; yEt[k1] = mid + arr * 8; yEt[k2] = mid - arr * 8; }
   return (
     <section className="panel">
       <h2>Evolución desde {anios[0]}</h2>
@@ -225,7 +226,7 @@ export function Evolucion({ anio }: { anio: number }) {
         <summary>Por qué estas medidas (3 puntos)</summary>
         <div className="pliegue-c">
           <ul>
-            <li>La serie de Hacienda va por capítulos, no por políticas, y no resta el dinero que la comunidad solo reparte (IFL y PAC). Por eso no se muestra aquí el gasto total: en Cataluña incluiría ese dinero y no sería comparable con el resto de la página. Las medidas elegidas no lo incluyen.</li>
+            <li>La serie de Hacienda va por capítulos, no por políticas, y no resta el dinero que la comunidad solo reparte (IFL y PAC). Por eso no se muestra aquí el gasto total: en las comunidades que hacen de intermediarias incluiría ese dinero y no sería comparable con el resto de la página. Las medidas elegidas no lo incluyen.</li>
             <li>Empieza en 2002, el primer año en que las dos comunidades gestionan la sanidad pública (traspasos del antiguo INSALUD).</li>
             <li>«Sin inflación»: euros del último año con el IPC general nacional, media anual (INE). «Euros de cada año»: tal cual. Población a 1 de julio de cada año (INE).</li>
           </ul>

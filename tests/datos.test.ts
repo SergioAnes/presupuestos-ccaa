@@ -90,3 +90,18 @@ describe("evolución y euros constantes", () => {
       expect(AREAS.reduce((s, ar) => s + habPartida(c, a, ar.id), 0)).toBeCloseTo(habPartida(c, a, "T"), 6);
   });
 });
+
+import { COMPETENCIA_DISTINTA, INUSUAL, INUSUALES, notasCompetencia } from "@/lib/datos";
+
+describe("variaciones inusuales y competencias", () => {
+  it("todas cumplen el criterio (≥ 30 % y ≥ 10 € por habitante, sin inflación)", () => {
+    expect(INUSUALES.length).toBeGreaterThan(0);
+    for (const v of INUSUALES) {
+      expect(Math.abs(v.pct)).toBeGreaterThanOrEqual(INUSUAL.pct);
+      expect(Math.abs(v.despues - v.antes)).toBeGreaterThanOrEqual(INUSUAL.eur);
+    }
+  });
+  it("cada política con competencias distintas tiene su nota", () => {
+    for (const id of COMPETENCIA_DISTINTA) expect(notasCompetencia(id).length).toBeGreaterThan(0);
+  });
+});

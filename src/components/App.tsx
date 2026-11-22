@@ -2,8 +2,8 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
-  ANIOS, AREAS, CAPITULOS, CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, TRANSF_EJEMPLO, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
-  capitulosMiles, csv, depuracionDe, sfa, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
+  ANIOS, AREAS, CAPITULOS, CCAA, COLOR_CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, TRANSF_EJEMPLO, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
+  capitulosMiles, csv, depuracionDe, inusualesEn, notasCompetencia, sfa, singularesDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
   type Ccaa, type Partida, type Unidad,
 } from "@/lib/datos";
 import { Icono } from "./Icono";
@@ -11,8 +11,13 @@ import { Deuda, Evolucion, Ingresos } from "./Dinero";
 import { PorQue } from "./PorQue";
 import { Cambios, MiniEvolucion } from "./Cambios";
 
-const URL_ESTATUT = "https://www.boe.es/buscar/act.php?id=BOE-A-2006-13087";
-const COLOR: Record<Ccaa, string> = { MD: "var(--s1)", CT: "var(--s2)" };
+const COLOR = COLOR_CCAA;
+// Pareja comparada: A es la primera (base de las diferencias: «B menos A») y B la segunda. Los textos se generan con sus nombres.
+const [A, B] = CCAA;
+const SIN = singularesDe(A, B);
+const nombreDe = (id: string) => POLITICAS.find((p) => p.id === id)?.nombre ?? id;
+const NOMBRES_SIN = SIN.map((id) => nombreDe(id).toLowerCase()).join(", ");
+const QUIEN_SIN = [...new Set(SIN.flatMap((id) => notasCompetencia(id).map((n) => NOMBRE[n.quien])))].join(" y ");
 const COLOR_AREA: Record<string, string> = { "1": "var(--a1)", "2": "var(--a2)", "3": "var(--a3)", "4": "var(--a4)", "9": "var(--a9)" };
 
 type Abrir = (id: string) => void;
@@ -111,19 +116,17 @@ function Compartir() {
 
 // ---------- tarjetas ----------
 function Tarjetas({ anio, u, verPorQue }: { anio: number; u: Unidad; verPorQue: () => void }) {
-  const r = { MD: resumen("MD", anio), CT: resumen("CT", anio) };
+  const r = Object.fromEntries(CCAA.map((c) => [c, resumen(c, anio)])) as Record<Ccaa, ReturnType<typeof resumen>>;
   const mill = u === "mill";
   const unidad: Unidad = mill ? "mill" : "hab";
   const porHab = (c: Ccaa) => (r[c].gasto * 1000) / r[c].poblacion;
   const v = (c: Ccaa) => (mill ? r[c].gasto / 1000 : porHab(c));
-  const pct = (porHab("CT") / porHab("MD") - 1) * 100;
-  const sin13 = (c: Ccaa) => ((r[c].gasto - gastoMiles(c, anio, "13")) * 1000) / r[c].poblacion;
-  const pctSin13 = (sin13("CT") / sin13("MD") - 1) * 100;
-  const masHab = (r.CT.poblacion / r.MD.poblacion - 1) * 100;
-  const fa = { MD: sfa("MD", anio), CT: sfa("CT", anio) };
-  const ajSin = fa.MD && fa.CT
-    ? (((r.CT.gasto - gastoMiles("CT", anio, "13")) / fa.CT.poblacion_ajustada) / ((r.MD.gasto - gastoMiles("MD", anio, "13")) / fa.MD.poblacion_ajustada) - 1) * 100
-    : null;
+  const pct = (porHab(B) / porHab(A) - 1) * 100;
+  const gastoSin = (c: Ccaa) => r[c].gasto - SIN.reduce((s, id) => s + gastoMiles(c, anio, id), 0);
+  const pctSin = SIN.length ? ((gastoSin(B) / r[B].poblacion) / (gastoSin(A) / r[A].poblacion) - 1) * 100 : null;
+  const masHab = (r[B].poblacion / r[A].poblacion - 1) * 100;
+  const fa = { a: sfa(A, anio), b: sfa(B, anio) };
+  const ajSin = fa.a && fa.b ? ((gastoSin(B) / fa.b.poblacion_ajustada) / (gastoSin(A) / fa.a.poblacion_ajustada) - 1) * 100 : null;
   return (
     <div className="kpis">
       {CCAA.map((c) => (
@@ -135,11 +138,12 @@ function Tarjetas({ anio, u, verPorQue }: { anio: number; u: Unidad; verPorQue: 
       ))}
       <div className="kpi">
         <span className="kpi-n">Diferencia{mill ? "" : " por habitante"}</span>
-        <span className="kpi-v num">{fmtDif(v("CT") - v("MD"), unidad)} <small>({fmtPct(pct)} por habitante)</small></span>
+        <span className="kpi-v num">{fmtDif(v(B) - v(A), unidad)} <small>({fmtPct(pct)} por habitante)</small></span>
         <span className="kpi-s">
-          Sin seguridad y prisiones, que solo gestiona Cataluña: {fmtPct(pctSin13)}.
-          {ajSin !== null && <> Por habitante ajustado (edad y reparto de la población) y sin seguridad y prisiones: {fmtPct(ajSin)}.</>}
-          {mill ? ` Cataluña tiene un ${fmtNum(masHab)} % más de habitantes.` : ""}
+          {NOMBRE[B]} menos {NOMBRE[A]}.
+          {pctSin !== null && <> Sin {NOMBRES_SIN}, que solo gestiona {QUIEN_SIN}: {fmtPct(pctSin)}.</>}
+          {ajSin !== null && <> Por habitante ajustado (edad y reparto de la población){SIN.length ? ` y sin ${NOMBRES_SIN}` : ""}: {fmtPct(ajSin)}.</>}
+          {mill ? ` ${NOMBRE[B]} tiene un ${fmtNum(Math.abs(masHab))} % ${masHab >= 0 ? "más" : "menos"} de habitantes.` : ""}
           {" "}<button className="enlace" onClick={verPorQue}>¿Por qué?</button>
         </span>
       </div>
@@ -170,12 +174,11 @@ function DeCada100({ anio, abrir }: { anio: number; abrir: Abrir }) {
       </div>
       <p className="ayuda">Por redondeo, la suma puede no dar exactamente 100.</p>
       <div className="cien-ley">
-        <div className="cien-ley-cab"><span /><span>Madrid</span><span>Cataluña</span></div>
+        <div className="cien-ley-cab"><span />{CCAA.map((c) => <span key={c}>{NOMBRE[c]}</span>)}</div>
         {AREAS.map((a, i) => (
           <button key={a.id} className="cien-ley-f" onClick={() => abrir(a.id)}>
             <span className="cien-ley-n"><i style={{ background: COLOR_AREA[a.id] }} /><Icono id={a.id} tam={16} />{a.nombre}</span>
-            <span className="num">{fmt(reparto.MD[i], "hab")}</span>
-            <span className="num">{fmt(reparto.CT[i], "hab")}</span>
+            {CCAA.map((c) => <span key={c} className="num">{fmt(reparto[c][i], "hab")}</span>)}
           </button>
         ))}
       </div>
@@ -185,46 +188,47 @@ function DeCada100({ anio, abrir }: { anio: number; abrir: Abrir }) {
 
 // ---------- titulares ----------
 function Titulares({ anio, abrir }: { anio: number; abrir: Abrir }) {
-  const difs = POLITICAS.map((p) => ({ p, d: hab("CT", anio, p.id) - hab("MD", anio, p.id) }));
-  const masCT = [...difs].sort((a, b) => b.d - a.d);
-  const masMD = [...difs].sort((a, b) => a.d - b.d)[0];
-  const primeraComparable = masCT.find((x) => !COMPETENCIA_DISTINTA.has(x.p.id))!;
+  const masDe = (c: Ccaa, otra: Ccaa) => POLITICAS.map((p) => ({ p, d: hab(c, anio, p.id) - hab(otra, anio, p.id) })).sort((a, b) => b.d - a.d);
   const mayor = (c: Ccaa) => [...POLITICAS].sort((a, b) => gastoMiles(c, anio, b.id) - gastoMiles(c, anio, a.id))[0];
   const pctDe = (c: Ccaa, id: string) => fmtNum(enUnidad(gastoMiles(c, anio, id), "pct", c, anio));
-  const mMD = mayor("MD"), mCT = mayor("CT");
+  const mA = mayor(A), mB = mayor(B);
   const e = (x: number) => `${fmtNum(Math.abs(x))} €`;
   const Enl = ({ p }: { p: Partida }) => <button className="enlace" onClick={() => abrir(p.id)}>{p.nombre.toLowerCase()}</button>;
   return (
     <div className="titulares">
       <div className="insight">
         <span className="k">Partida más grande</span>
-        {mMD.id === mCT.id ? (
-          <p>En las dos es <Enl p={mMD} />: <strong>{pctDe("MD", mMD.id)} €</strong> de cada 100 en Madrid y <strong>{pctDe("CT", mCT.id)} €</strong> en Cataluña.</p>
+        {mA.id === mB.id ? (
+          <p>En las dos es <Enl p={mA} />: <strong>{pctDe(A, mA.id)} €</strong> de cada 100 en {NOMBRE[A]} y <strong>{pctDe(B, mB.id)} €</strong> en {NOMBRE[B]}.</p>
         ) : (
-          <p>En Madrid, <Enl p={mMD} /> ({pctDe("MD", mMD.id)} € de cada 100); en Cataluña, <Enl p={mCT} /> ({pctDe("CT", mCT.id)} €).</p>
+          <p>En {NOMBRE[A]}, <Enl p={mA} /> ({pctDe(A, mA.id)} € de cada 100); en {NOMBRE[B]}, <Enl p={mB} /> ({pctDe(B, mB.id)} €).</p>
         )}
       </div>
-      <div className="insight">
-        <span className="k">Donde Cataluña gasta más</span>
-        {COMPETENCIA_DISTINTA.has(masCT[0].p.id) ? (
-          <p><strong>{e(masCT[0].d)} más por habitante</strong> en <Enl p={masCT[0].p} />, una competencia que Madrid no tiene. Entre las comparables, <strong>{e(primeraComparable.d)} más</strong> en <Enl p={primeraComparable.p} />.</p>
-        ) : (
-          <p><strong>{e(masCT[0].d)} más por habitante</strong> en <Enl p={masCT[0].p} />.</p>
-        )}
-      </div>
-      {masMD.d < 0 && (
-        <div className="insight">
-          <span className="k">Donde Madrid gasta más</span>
-          <p><strong>{e(masMD.d)} más por habitante</strong> en <Enl p={masMD.p} />.</p>
-        </div>
-      )}
+      {[B, A].map((c) => {
+        const otra = c === A ? B : A;
+        const lista = masDe(c, otra);
+        const top = lista[0];
+        if (!top || top.d <= 0) return null;
+        const singular = notasCompetencia(top.p.id).some((n) => n.quien === c);
+        const comparable = lista.find((x) => !COMPETENCIA_DISTINTA.has(x.p.id) && x.d > 0);
+        return (
+          <div className="insight" key={c}>
+            <span className="k">Donde {NOMBRE[c]} gasta más</span>
+            {singular && comparable ? (
+              <p><strong>{e(top.d)} más por habitante</strong> en <Enl p={top.p} />, una competencia que {NOMBRE[otra]} no tiene. Entre las comparables, <strong>{e(comparable.d)} más</strong> en <Enl p={comparable.p} />.</p>
+            ) : (
+              <p><strong>{e(top.d)} más por habitante</strong> en <Enl p={top.p} />.</p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 // ---------- diferencias que destacan ----------
 function Destacadas({ anio, abrir }: { anio: number; abrir: Abrir }) {
-  const fila = (p: Partida) => ({ p, md: hab("MD", anio, p.id), ct: hab("CT", anio, p.id) });
+  const fila = (p: Partida) => ({ p, md: hab(A, anio, p.id), ct: hab(B, anio, p.id) });
   const veces = (x: { md: number; ct: number }) => Math.max(x.md, x.ct) / Math.min(x.md, x.ct);
   const lista = POLITICAS.filter((p) => !COMPETENCIA_DISTINTA.has(p.id) && p.id !== "95")
     .map(fila)
@@ -240,11 +244,11 @@ function Destacadas({ anio, abrir }: { anio: number; abrir: Abrir }) {
       <div className="destacadas">
         {items.map(({ p, md, ct }) => {
           const max = Math.max(md, ct);
-          const quien: Ccaa = ct >= md ? "CT" : "MD";
-          const otra: Ccaa = quien === "CT" ? "MD" : "CT";
+          const quien: Ccaa = ct >= md ? B : A;
+          const otra: Ccaa = quien === B ? A : B;
           const menor = Math.min(md, ct);
           const etiqueta = menor < 1 ? `${NOMBRE[otra]}: menos de 1 €` : `${NOMBRE[quien]}: ×${nf1.format(max / menor)}`;
-          const vals: [Ccaa, number][] = [["MD", md], ["CT", ct]];
+          const vals: [Ccaa, number][] = [[A, md], [B, ct]];
           return (
             <button key={p.id} className="dest" onClick={() => abrir(p.id)}>
               <span className="dest-n"><Icono id={p.id} tam={18} />{p.id === "95" ? "Intereses de la deuda" : p.nombre}</span>
@@ -263,7 +267,7 @@ function Destacadas({ anio, abrir }: { anio: number; abrir: Abrir }) {
       <details className="pliegue">
         <summary>Criterio</summary>
         <div className="pliegue-c">
-          <p>Aparecen las políticas en las que una comunidad gasta, por habitante, al menos {DESTACA.veces} veces lo que la otra y la diferencia es de {DESTACA.minDif} € o más. Están ordenadas de mayor a menor proporción. Seguridad y prisiones no aparece porque las competencias no son iguales. Los intereses de la deuda se muestran siempre. Es un criterio fijo: no dice si un gasto está justificado.</p>
+          <p>Aparecen las políticas en las que una comunidad gasta, por habitante, al menos {DESTACA.veces} veces lo que la otra y la diferencia es de {DESTACA.minDif} € o más. Están ordenadas de mayor a menor proporción. {SIN.length ? `${NOMBRES_SIN.charAt(0).toUpperCase() + NOMBRES_SIN.slice(1)} no aparece porque las competencias no son iguales. ` : ""} Los intereses de la deuda se muestran siempre. Es un criterio fijo: no dice si un gasto está justificado.</p>
         </div>
       </details>
     </section>
@@ -326,32 +330,32 @@ function Barras({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
   );
 }
 
-// ---------- puente: de Madrid a Cataluña, política a política ----------
+// ---------- puente: de A a B, política a política ----------
 function Puente({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
   const [verResto, setVerResto] = useState(false);
   const un: Unidad = u === "mill" ? "mill" : "hab";
   const val = (c: Ccaa, id: string) => enUnidad(gastoMiles(c, anio, id), un, c, anio);
   const tot = (c: Ccaa) => enUnidad(resumen(c, anio).gasto, un, c, anio);
-  const ratio = poblacion("CT", anio) / poblacion("MD", anio);
+  const ratio = poblacion(B, anio) / poblacion(A, anio);
   const pasos: { id: string; p?: Partida; nombre: string; d: number; nota?: string }[] = [];
-  if (un === "mill") pasos.push({ id: "pob", nombre: "Por tener más habitantes", d: tot("MD") * (ratio - 1), nota: `Madrid × ${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(ratio)} (habitantes de Cataluña ÷ habitantes de Madrid)` });
-  const difs = POLITICAS.map((p) => ({ id: p.id, p, nombre: p.nombre, d: val("CT", p.id) - (un === "mill" ? val("MD", p.id) * ratio : val("MD", p.id)) }));
+  if (un === "mill") pasos.push({ id: "pob", nombre: `Por tener ${ratio >= 1 ? "más" : "menos"} habitantes`, d: tot(A) * (ratio - 1), nota: `${NOMBRE[A]} × ${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(ratio)} (habitantes de ${NOMBRE[B]} ÷ habitantes de ${NOMBRE[A]})` });
+  const difs = POLITICAS.map((p) => ({ id: p.id, p, nombre: p.nombre, d: val(B, p.id) - (un === "mill" ? val(A, p.id) * ratio : val(A, p.id)) }));
   difs.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
   const N = 9;
   const resto = difs.slice(N);
   pasos.push(...difs.slice(0, N).sort((a, b) => b.d - a.d));
   if (resto.length) pasos.push({ id: "resto", nombre: `Resto (${resto.length} políticas)`, d: resto.reduce((s, x) => s + x.d, 0), nota: resto.map((x) => `${x.nombre}: ${fmtDif(x.d, un)}`).join("\n") });
 
-  let acc = tot("MD");
+  let acc = tot(A);
   const segs = pasos.map((p) => { const a = acc; acc += p.d; return { ...p, desde: Math.min(a, acc), hasta: Math.max(a, acc) }; });
-  const max = Math.max(tot("MD"), tot("CT"), ...segs.map((s) => s.hasta));
+  const max = Math.max(tot(A), tot(B), ...segs.map((s) => s.hasta));
   const pc = (x: number) => `${(x / max) * 100}%`;
   return (
     <div className="puente">
       <div className="pf extremo">
-        <span className="pf-et">Madrid</span>
-        <div className="pf-pista"><div className="pf-seg" style={{ left: 0, width: pc(tot("MD")), background: COLOR.MD }} /></div>
-        <span className="pf-v num">{fmt(tot("MD"), un)}</span>
+        <span className="pf-et">{NOMBRE[A]}</span>
+        <div className="pf-pista"><div className="pf-seg" style={{ left: 0, width: pc(tot(A)), background: COLOR[A] }} /></div>
+        <span className="pf-v num">{fmt(tot(A), un)}</span>
       </div>
       {segs.map((s) => (
         <Fragment key={s.id}>
@@ -365,7 +369,7 @@ function Puente({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
               {s.id === "pob" && <small className="bf-ayuda">{s.nota}</small>}
             </span>
             <div className="pf-pista">
-              <div className="pf-seg" style={{ left: pc(s.desde), width: `max(2px, ${pc(s.hasta - s.desde)})`, background: s.id === "pob" ? "var(--grey-line)" : s.d >= 0 ? COLOR.CT : COLOR.MD }} />
+              <div className="pf-seg" style={{ left: pc(s.desde), width: `max(2px, ${pc(s.hasta - s.desde)})`, background: s.id === "pob" ? "var(--grey-line)" : s.d >= 0 ? COLOR[B] : COLOR[A] }} />
             </div>
             <span className="pf-v num">{fmtDif(s.d, un)}</span>
           </div>
@@ -379,13 +383,13 @@ function Puente({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
         </Fragment>
       ))}
       <div className="pf extremo">
-        <span className="pf-et">Cataluña</span>
-        <div className="pf-pista"><div className="pf-seg" style={{ left: 0, width: pc(tot("CT")), background: COLOR.CT }} /></div>
-        <span className="pf-v num">{fmt(tot("CT"), un)}</span>
+        <span className="pf-et">{NOMBRE[B]}</span>
+        <div className="pf-pista"><div className="pf-seg" style={{ left: 0, width: pc(tot(B)), background: COLOR[B] }} /></div>
+        <span className="pf-v num">{fmt(tot(B), un)}</span>
       </div>
       <div className="leyenda">
-        <span><i style={{ background: COLOR.CT }} />Cataluña gasta más</span>
-        <span><i style={{ background: COLOR.MD }} />Madrid gasta más</span>
+        <span><i style={{ background: COLOR[B] }} />{NOMBRE[B]} gasta más</span>
+        <span><i style={{ background: COLOR[A] }} />{NOMBRE[A]} gasta más</span>
         {un === "mill" && <span><i style={{ background: "var(--grey-line)" }} />Efecto del tamaño</span>}
       </div>
     </div>
@@ -398,8 +402,8 @@ interface FilaT { p: Partida; md: number; ct: number; dif: number; pct: number }
 function Tabla({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
   const [orden, setOrden] = useState<{ col: Col; desc: boolean }>({ col: "orden", desc: false });
   const fila = (p: Partida): FilaT => {
-    const md = enUnidad(gastoMiles("MD", anio, p.id), u, "MD", anio), ct = enUnidad(gastoMiles("CT", anio, p.id), u, "CT", anio);
-    const hmd = hab("MD", anio, p.id), hct = hab("CT", anio, p.id);
+    const md = enUnidad(gastoMiles(A, anio, p.id), u, A, anio), ct = enUnidad(gastoMiles(B, anio, p.id), u, B, anio);
+    const hmd = hab(A, anio, p.id), hct = hab(B, anio, p.id);
     return { p, md, ct, dif: ct - md, pct: hmd >= MIN_HAB_PCT ? (hct / hmd - 1) * 100 : NaN };
   };
   const pols = POLITICAS.map(fila);
@@ -420,9 +424,9 @@ function Tabla({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
       <td className="num">{isNaN(f.pct) ? "—" : fmtPct(f.pct)}</td>
     </>
   );
-  const r = { MD: resumen("MD", anio).gasto, CT: resumen("CT", anio).gasto };
-  const tMd = enUnidad(r.MD, u, "MD", anio), tCt = enUnidad(r.CT, u, "CT", anio);
-  const ftot: FilaT = { p: { id: "T", area: "", nombre: "Total", oficial: "Total" }, md: tMd, ct: tCt, dif: tCt - tMd, pct: (enUnidad(r.CT, "hab", "CT", anio) / enUnidad(r.MD, "hab", "MD", anio) - 1) * 100 };
+  const ga = resumen(A, anio).gasto, gb = resumen(B, anio).gasto;
+  const tMd = enUnidad(ga, u, A, anio), tCt = enUnidad(gb, u, B, anio);
+  const ftot: FilaT = { p: { id: "T", area: "", nombre: "Total", oficial: "Total" }, md: tMd, ct: tCt, dif: tCt - tMd, pct: (enUnidad(gb, "hab", B, anio) / enUnidad(ga, "hab", A, anio) - 1) * 100 };
   const descargar = () => {
     const url = URL.createObjectURL(new Blob([csv(anio)], { type: "text/csv;charset=utf-8" }));
     const a = Object.assign(document.createElement("a"), { href: url, download: `gasto-madrid-cataluna-${anio}.csv` });
@@ -434,7 +438,7 @@ function Tabla({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
       <div className="tabla-wrap">
         <table className="tabla">
           <thead>
-            <tr>{th("orden", "Política de gasto")}{th("MD", "Madrid")}{th("CT", "Cataluña")}{th("dif", "Diferencia")}{th("pct", "Dif. por hab.")}</tr>
+            <tr>{th("orden", "Política de gasto")}{th("MD", NOMBRE[A])}{th("CT", NOMBRE[B])}{th("dif", "Diferencia")}{th("pct", "Dif. por hab.")}</tr>
           </thead>
           <tbody>
             {ordenadas
@@ -452,8 +456,8 @@ function Tabla({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
         </table>
       </div>
       <p className="ayuda">
-        Pulsa en una columna para ordenar y en una política para ver su detalle. «Diferencia»: Cataluña menos Madrid. «Dif. por hab.»: cuánto más (o menos)
-        gasta Cataluña por habitante, en %; «—» cuando Madrid gasta menos de {MIN_HAB_PCT} € por habitante y el porcentaje no dice nada.
+        Pulsa en una columna para ordenar y en una política para ver su detalle. «Diferencia»: {NOMBRE[B]} menos {NOMBRE[A]}. «Dif. por hab.»: cuánto más (o menos)
+        gasta {NOMBRE[B]} por habitante, en %; «—» cuando {NOMBRE[A]} gasta menos de {MIN_HAB_PCT} € por habitante y el porcentaje no dice nada.
       </p>
       <div className="acciones"><button className="btn sm" onClick={descargar}>Descargar datos de {anio} (CSV)</button></div>
     </>
@@ -462,7 +466,7 @@ function Tabla({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
 
 // ---------- lo que queda fuera ----------
 function Fuera({ anio }: { anio: number }) {
-  const r = { MD: resumen("MD", anio), CT: resumen("CT", anio) };
+  const r = Object.fromEntries(CCAA.map((c) => [c, resumen(c, anio)])) as Record<Ccaa, ReturnType<typeof resumen>>;
   const m = (x: number) => fmt(x / 1000, "mill");
   const filas: [string, (c: Ccaa) => number, string][] = [
     ["Gasto comparado en esta página", (c) => r[c].gasto, "Incluye los intereses de la deuda."],
@@ -473,15 +477,15 @@ function Fuera({ anio }: { anio: number }) {
   return (
     <div className="tabla-wrap">
       <table className="tabla">
-        <thead><tr><th>Millones de euros, {anio}</th><th>Madrid</th><th>Cataluña</th></tr></thead>
+        <thead><tr><th>Millones de euros, {anio}</th>{CCAA.map((c) => <th key={c}>{NOMBRE[c]}</th>)}</tr></thead>
         <tbody>
           {filas.map(([t, fn, ayuda], i) => (
-            <tr key={t} className={i === 0 ? "area" : ""}><td>{t}<small>{ayuda}</small></td><td className="num">{m(fn("MD"))}</td><td className="num">{m(fn("CT"))}</td></tr>
+            <tr key={t} className={i === 0 ? "area" : ""}><td>{t}<small>{ayuda}</small></td>{CCAA.map((c) => <td key={c} className="num">{m(fn(c))}</td>)}</tr>
           ))}
         </tbody>
-        <tfoot><tr className="area"><td>Total de obligaciones registradas (Hacienda)</td><td className="num">{m(r.MD.total)}</td><td className="num">{m(r.CT.total)}</td></tr></tfoot>
+        <tfoot><tr className="area"><td>Total de obligaciones registradas (Hacienda)</td>{CCAA.map((c) => <td key={c} className="num">{m(r[c].total)}</td>)}</tr></tfoot>
       </table>
-      <p className="ayuda">Intereses de la deuda en {anio} (dentro del gasto comparado): Madrid {m(r.MD.intereses)}, Cataluña {m(r.CT.intereses)}.</p>
+      <p className="ayuda">Intereses de la deuda en {anio} (dentro del gasto comparado): {CCAA.map((c) => `${NOMBRE[c]} ${m(r[c].intereses)}`).join(", ")}.</p>
     </div>
   );
 }
@@ -511,14 +515,15 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
     }
   }, [id]);
   const p = partida(id)!;
-  const caps = { MD: capitulosMiles("MD", anio, id), CT: capitulosMiles("CT", anio, id) };
+  const caps = Object.fromEntries(CCAA.map((c) => [c, capitulosMiles(c, anio, id)])) as Record<Ccaa, number[]>;
   const capHab = (c: Ccaa, i: number) => (caps[c][i] * 1000) / poblacion(c, anio);
   // Sin filas en las que las dos comunidades están a 0 € por habitante (p. ej., intereses fuera de «Deuda pública»)
   const filasCap = CAPITULOS.filter((k) => CCAA.some((c) => Math.abs((caps[c][k.n - 1] * 1000) / poblacion(c, anio)) >= 0.05));
   const maxCap = Math.max(...filasCap.flatMap((k) => CCAA.map((c) => capHab(c, k.n - 1))));
   const sumaCaps = (c: Ccaa) => caps[c].slice(0, 7).reduce((s, x) => s + x, 0);
-  const dep = { MD: depuracionDe("MD", anio, id), CT: depuracionDe("CT", anio, id) };
-  const fuera = { MD: caps.MD[7] + caps.MD[8], CT: caps.CT[7] + caps.CT[8] };
+  const dep = Object.fromEntries(CCAA.map((c) => [c, depuracionDe(c, anio, id)])) as Record<Ccaa, number>;
+  const fuera = Object.fromEntries(CCAA.map((c) => [c, caps[c][7] + caps[c][8]])) as Record<Ccaa, number>;
+  const inus = CCAA.flatMap((c) => inusualesEn(c, id, ANIOS[0], ANIOS[ANIOS.length - 1]));
   const hijas = id.length === 1 ? POLITICAS.filter((x) => x.area === id) : [];
   const madre = id.length === 2 ? partida(id[0]) : undefined;
   return (
@@ -557,23 +562,30 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
             <h3>Evolución</h3>
             <p className="sub">€ por habitante de cada año (sin descontar la inflación).</p>
             <MiniEvolucion id={id} />
+            {inus.length > 0 && (
+              <p className="aviso">
+                <b>Variación inusual:</b> {inus.map((v) => `${NOMBRE[v.ccaa]} en ${v.anio} (${v.pct > 0 ? "+" : "−"}${fmtNum(Math.abs(v.pct))} % sin inflación)`).join("; ")}.
+                Es un cambio grande respecto al año anterior, detectado con un criterio fijo; la cifra es oficial, pero la fuente no lo explica.
+              </p>
+            )}
           </>
         )}
 
-        {COMPETENCIA_DISTINTA.has(id) && (
-          <p className="aviso">Cataluña tiene policía propia y gestiona sus prisiones (<a href={URL_ESTATUT}>Estatuto, arts. 164 y 168</a>). En Madrid, la Policía Nacional, la Guardia Civil y las prisiones las paga el Estado con los impuestos generales y no pasan por el presupuesto de la Comunidad: no es comparable.</p>
+        {notasCompetencia(id).length > 0 && (
+          <>{notasCompetencia(id).map((n) => (
+            <p className="aviso" key={n.quien}>{NOMBRE[n.quien]} {n.nota.tiene} (<a href={n.nota.fuente.url}>{n.nota.fuente.texto}</a>). En {n.otras.map((o) => NOMBRE[o]).join(" y ")}, {n.nota.sinElla}: no es comparable.</p>
+          ))}</>
         )}
 
         {hijas.length > 0 && (
           <>
             <h3>Políticas de esta área</h3>
             <div className="ficha-tabla">
-              <div className="ft-cab"><span /><span>Madrid</span><span>Cataluña</span></div>
+              <div className="ft-cab"><span />{CCAA.map((c) => <span key={c}>{NOMBRE[c]}</span>)}</div>
               {hijas.map((h) => (
                 <button key={h.id} className="ft-f" onClick={() => abrir(h.id)}>
                   <span className="ft-n"><Icono id={h.id} tam={16} />{h.nombre} <Marca id={h.id} /></span>
-                  <span className="num">{fmt(hab("MD", anio, h.id), "hab")}</span>
-                  <span className="num">{fmt(hab("CT", anio, h.id), "hab")}</span>
+                  {CCAA.map((c) => <span key={c} className="num">{fmt(hab(c, anio, h.id), "hab")}</span>)}
                 </button>
               ))}
             </div>
@@ -674,7 +686,9 @@ export function App() {
     <div className="siguiente"><button className="btn" onClick={() => ir(siguiente.id)}>Siguiente: {siguiente.nombre} →</button></div>
   ) : null;
   const enlace = (v: Vista) => `#${v}?anio=${anio}&u=${u}`;
-  const depCT = { ifl: depuracionDe("CT", anio, "94"), pac: depuracionDe("CT", anio, "41") };
+  const dep = CCAA.map((c) => ({ c, ifl: depuracionDe(c, anio, "94"), pac: depuracionDe(c, anio, "41") }));
+  const conDep = dep.filter((x) => x.ifl + x.pac > 0), sinDep = dep.filter((x) => x.ifl + x.pac <= 0);
+  const totalHab = (c: Ccaa) => (resumen(c, anio).total * 1000) / poblacion(c, anio);
 
   return (
     <>
@@ -689,7 +703,7 @@ export function App() {
       <main className="wrap">
         {vista === "resumen" && (
           <section className="intro">
-            <h1>Madrid y Cataluña: ¿en qué gastan su presupuesto?</h1>
+            <h1>{NOMBRE[A]} y {NOMBRE[B]}: ¿en qué gastan su presupuesto?</h1>
             <p>Lo que cada comunidad gastó de verdad (presupuesto liquidado), política a política, con los datos del Ministerio de Hacienda.</p>
           </section>
         )}
@@ -703,12 +717,13 @@ export function App() {
         {vista === "resumen" && <>
         <Tarjetas anio={anio} u={u} verPorQue={() => { cambiar({ vista: "ingresos" }); setTimeout(() => document.getElementById("porque")?.scrollIntoView(), 50); }} />
         <details className="pliegue">
-          <summary>Qué cuenta este gasto (4 puntos)</summary>
+          <summary>Qué cuenta este gasto (5 puntos)</summary>
           <div className="pliegue-c">
             <ul>
-              <li>Es el gasto <b>consolidado</b>: la administración de la comunidad y sus organismos ({ENTIDADES.MD?.["2024"]?.length ?? "—"} en Madrid y {ENTIDADES.CT?.["2024"]?.length ?? "—"} en Cataluña en 2024, entre ellos los servicios de salud), sin contar dos veces lo que se pasan entre ellos.</li>
+              <li>Es el gasto <b>consolidado</b>: la administración de la comunidad y sus organismos ({CCAA.map((c) => `${ENTIDADES[c]?.["2024"]?.length ?? "—"} en ${NOMBRE[c]}`).join(" y ")} en 2024, entre ellos los servicios de salud), sin contar dos veces lo que se pasan entre ellos.</li>
               <li>No incluye la <b>devolución de préstamos</b> ni los <b>préstamos concedidos</b>, que no son gasto en servicios. Los <b>intereses</b> de la deuda sí están incluidos.</li>
-              <li>No incluye el dinero que la comunidad <b>solo reparte</b>: en Cataluña, {fmt(depCT.ifl / 1000, "mill")} que pasan a las entidades locales y {fmt(depCT.pac / 1000, "mill")} de ayudas agrarias europeas. En Madrid, Hacienda no resta nada.</li>
+              <li>No incluye el dinero que la comunidad <b>solo reparte</b>{conDep.length ? ": " : "."}{conDep.map((x) => `en ${NOMBRE[x.c]}, ${fmt(x.ifl / 1000, "mill")} que pasan a las entidades locales y ${fmt(x.pac / 1000, "mill")} de ayudas agrarias europeas`).join("; ")}{conDep.length ? "." : ""}{sinDep.length ? ` En ${sinDep.map((x) => NOMBRE[x.c]).join(" y ")}, Hacienda no resta nada.` : ""}</li>
+              <li>Si se cuenta <b>todo el presupuesto</b>, con la devolución de préstamos y lo que solo se reparte: {CCAA.map((c) => `${NOMBRE[c]} ${fmt(totalHab(c), "hab")}`).join(" y ")} por habitante. La devolución se explica en <a href={enlace("ingresos")} onClick={(e) => { e.preventDefault(); ir("ingresos"); }}>Deuda</a>.</li>
               <li>Por habitante: población a 1 de julio del INE. <a href={enlace("metodo")} onClick={(e) => { e.preventDefault(); ir("metodo"); }}>Más detalle</a>.</li>
             </ul>
           </div>
@@ -727,9 +742,11 @@ export function App() {
           <Leyenda />
           <Barras anio={anio} u={u} abrir={abrir} />
           <details className="pliegue">
-            <summary>Competencias que no son iguales (1)</summary>
+            <summary>Competencias que no son iguales ({SIN.length})</summary>
             <div className="pliegue-c">
-              <p><b>Seguridad y prisiones.</b> Cataluña tiene policía propia y gestiona sus prisiones (<a href={URL_ESTATUT}>Estatuto de Autonomía, arts. 164 y 168</a>). En Madrid, la Policía Nacional, la Guardia Civil y las prisiones las paga el Estado con los impuestos generales, así que ese gasto no pasa por el presupuesto de la Comunidad; lo que Madrid tiene en esta política son otros servicios. No sumamos ni restamos ninguna estimación: por eso se marca como <span className="marca">≠ competencias</span> y las tarjetas dan también la diferencia sin esta política.</p>
+              {SIN.flatMap((id) => notasCompetencia(id).map((n) => (
+                <p key={id + n.quien}><b>{nombreDe(id)}.</b> {NOMBRE[n.quien]} {n.nota.tiene} (<a href={n.nota.fuente.url}>{n.nota.fuente.texto}</a>). En {n.otras.map((o) => NOMBRE[o]).join(" y ")}, {n.nota.sinElla}; lo que tenga en esta política son otros servicios. No sumamos ni restamos ninguna estimación: por eso se marca como <span className="marca">≠ competencias</span> y las tarjetas dan también la diferencia sin esta política.</p>
+              )))}
             </div>
           </details>
         </section>
@@ -738,8 +755,8 @@ export function App() {
           <h2>Dónde está la diferencia</h2>
           <p className="sub">
             {u === "mill"
-              ? `Millones de €, ${anio}. Del gasto de Madrid al de Cataluña: primero, lo que supone que Cataluña tenga más habitantes; después, la diferencia de cada política con la misma población.`
-              : `Euros por habitante, ${anio}. Del gasto de Madrid al de Cataluña, sumando la diferencia de cada política.`}
+              ? `Millones de €, ${anio}. Del gasto de ${NOMBRE[A]} al de ${NOMBRE[B]}: primero, lo que supone la diferencia de habitantes; después, la diferencia de cada política con la misma población.`
+              : `Euros por habitante, ${anio}. Del gasto de ${NOMBRE[A]} al de ${NOMBRE[B]}, sumando la diferencia de cada política.`}
           </p>
           <Puente anio={anio} u={u} abrir={abrir} />
         </section>
@@ -755,7 +772,7 @@ export function App() {
         </>}
 
         {vista === "ingresos" && <>
-        <PorQue a="MD" b="CT" anio={anio} />
+        <PorQue a={A} b={B} anio={anio} />
         <Ingresos anio={anio} u={u} />
         <Deuda anio={anio} u={u} />
         <Evolucion anio={anio} />
