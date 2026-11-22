@@ -297,3 +297,9 @@ dialog.ficha::backdrop { background: rgb(10 15 25 / 0.5); }
 .tabla.pq td small { color: var(--muted); }
 .pq-p { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
 .porque { scroll-margin-top: 80px; }
+@media (max-width: 640px) {
+  .tabla.pq { font-size: 0.8rem; }
+  .tabla.pq th, .tabla.pq td { padding: 6px 6px; }
+  .tabla.pq th:first-child, .tabla.pq td:first-child { min-width: 112px; }
+  .tabla.pq td small { display: block; }
+}
