@@ -1,0 +1,198 @@
+{
+  "unidad": "M€",
+  "perimetro": "S.1312",
+  "divisiones": {
+    "01": "Servicios públicos generales",
+    "02": "Defensa",
+    "03": "Orden público y seguridad",
+    "04": "Asuntos económicos",
+    "05": "Protección del medio ambiente",
+    "06": "Vivienda y servicios comunitarios",
+    "07": "Salud",
+    "08": "Ocio, cultura y religión",
+    "09": "Educación",
+    "10": "Protección social"
+  },
+  "ejercicios": {
+    "2022": {
+      "operaciones": {
+        "url": "https://www.igae.pap.hacienda.gob.es/sitios/igae/es-ES/Contabilidad/ContabilidadNacional/Publicaciones/Documents/CCAA-A/A_CCAA_Det_2022.xlsx",
+        "fecha": "2024-09-30",
+        "estado": "Definitivo",
+        "territorios": {
+          "MD": {
+            "recursos": 31807,
+            "gasto": 33853,
+            "intereses": 799,
+            "saldo": -2046
+          },
+          "CT": {
+            "recursos": 39474,
+            "gasto": 43178,
+            "intereses": 1049,
+            "saldo": -3704
+          }
+        }
+      },
+      "cofog": {
+        "url": "https://www.igae.pap.hacienda.gob.es/sitios/igae/es-ES/Contabilidad/ContabilidadNacional/Publicaciones/Documents/CCAA-A/COFOG_A_Detalle_CCAA_2022.xlsx",
+        "fecha": "2024-11-29",
+        "estado": "Definitivo",
+        "territorios": {
+          "MD": {
+            "hoja": "Tabla13a",
+            "total": 33853,
+            "divisiones": {
+              "01": 9488,
+              "02": 0,
+              "03": 716,
+              "04": 2712,
+              "05": 146,
+              "06": 234,
+              "07": 11557,
+              "08": 323,
+              "09": 6287,
+              "10": 2390
+            }
+          },
+          "CT": {
+            "hoja": "Tabla10a",
+            "total": 43178,
+            "divisiones": {
+              "01": 9044,
+              "02": 0,
+              "03": 2561,
+              "04": 3795,
+              "05": 174,
+              "06": 637,
+              "07": 14695,
+              "08": 808,
+              "09": 8257,
+              "10": 3207
+            }
+          }
+        }
+      }
+    },
+    "2023": {
+      "operaciones": {
+        "url": "https://www.igae.pap.hacienda.gob.es/sitios/igae/es-ES/Contabilidad/ContabilidadNacional/Publicaciones/Documents/CCAA-A/A_CCAA_Det_2023.xlsx",
+        "fecha": "2025-09-30",
+        "estado": "Definitivo",
+        "territorios": {
+          "MD": {
+            "recursos": 34487,
+            "gasto": 36698,
+            "intereses": 1139,
+            "saldo": -2211
+          },
+          "CT": {
+            "recursos": 41776,
+            "gasto": 45274,
+            "intereses": 1418,
+            "saldo": -3498
+          }
+        }
+      },
+      "cofog": {
+        "url": "https://www.igae.pap.hacienda.gob.es/sitios/igae/es-ES/Contabilidad/ContabilidadNacional/Publicaciones/Documents/CCAA-A/COFOG_A_Detalle_CCAA_2023.xlsx",
+        "fecha": "2025-11-28",
+        "estado": "Definitivo",
+        "territorios": {
+          "MD": {
+            "hoja": "Tabla13a",
+            "total": 36698,
+            "divisiones": {
+              "01": 10018,
+              "02": 0,
+              "03": 781,
+              "04": 3450,
+              "05": 163,
+              "06": 225,
+              "07": 12168,
+              "08": 350,
+              "09": 6816,
+              "10": 2727
+            }
+          },
+          "CT": {
+            "hoja": "Tabla10a",
+            "total": 45274,
+            "divisiones": {
+              "01": 8442,
+              "02": 0,
+              "03": 2672,
+              "04": 4025,
+              "05": 196,
+              "06": 868,
+              "07": 15926,
+              "08": 926,
+              "09": 8928,
+              "10": 3291
+            }
+          }
+        }
+      }
+    },
+    "2024": {
+      "operaciones": {
+        "url": "https://www.igae.pap.hacienda.gob.es/sitios/igae/es-ES/Contabilidad/ContabilidadNacional/Publicaciones/Documents/CCAA-A/A_CCAA_Det_2024.xlsx",
+        "fecha": "2026-09-30",
+        "estado": "Definitivo",
+        "territorios": {
+          "MD": {
+            "recursos": 38639,
+            "gasto": 39177,
+            "intereses": 1239,
+            "saldo": -538
+          },
+          "CT": {
+            "recursos": 48412,
+            "gasto": 49964,
+            "intereses": 1709,
+            "saldo": -1552
+          }
+        }
+      },
+      "cofog": {
+        "url": "https://www.igae.pap.hacienda.gob.es/sitios/igae/es-ES/Contabilidad/ContabilidadNacional/Publicaciones/Documents/CCAA-A/COFOG_A_Detalle_CCAA_2024.xlsx",
+        "fecha": "2025-11-28",
+        "estado": "Provisional",
+        "territorios": {
+          "MD": {
+            "hoja": "Tabla13a",
+            "total": 39233,
+            "divisiones": {
+              "01": 11288,
+              "02": 0,
+              "03": 852,
+              "04": 3598,
+              "05": 165,
+              "06": 214,
+              "07": 12534,
+              "08": 366,
+              "09": 7296,
+              "10": 2920
+            }
+          },
+          "CT": {
+            "hoja": "Tabla10a",
+            "total": 49980,
+            "divisiones": {
+              "01": 10205,
+              "02": 0,
+              "03": 2865,
+              "04": 4563,
+              "05": 216,
+              "06": 831,
+              "07": 16862,
+              "08": 979,
+              "09": 9514,
+              "10": 3945
+            }
+          }
+        }
+      }
+    }
+  }
+}

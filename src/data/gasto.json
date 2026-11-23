@@ -5012,7 +5012,7 @@
     "no_homogeneas": 16821.17,
     "homogenea": 7550999.13,
     "homogenea_hab_ajustado": 3478.68,
-    "poblacion_ajustada": 2170651
+    "poblacion_ajustada": 2170650
    }
   },
   "CT": {
@@ -5050,7 +5050,7 @@
     "no_homogeneas": 3567738.55,
     "homogenea": 27255611.43,
     "homogenea_hab_ajustado": 3475.49,
-    "poblacion_ajustada": 7842239
+    "poblacion_ajustada": 7842238
    }
   },
   "EX": {
@@ -5064,7 +5064,7 @@
     "no_homogeneas": 12572.15,
     "homogenea": 4018770.72,
     "homogenea_hab_ajustado": 3636.29,
-    "poblacion_ajustada": 1105183
+    "poblacion_ajustada": 1105184
    },
    "2023": {
     "fg_aporta": 1787866.93,
@@ -5278,7 +5278,7 @@
     "no_homogeneas": 465323.72,
     "homogenea": 16208706.36,
     "homogenea_hab_ajustado": 3138.9,
-    "poblacion_ajustada": 5163818
+    "poblacion_ajustada": 5163817
    }
   }
  },

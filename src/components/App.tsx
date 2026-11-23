@@ -8,6 +8,7 @@ import {
 } from "@/lib/datos";
 import { Icono } from "./Icono";
 import { Deuda, Evolucion, Ingresos } from "./Dinero";
+import { Contraste, Funciones } from "./Cuentas";
 import { PorQue } from "./PorQue";
 import { Cambios, MiniEvolucion } from "./Cambios";
 
@@ -17,7 +18,6 @@ const [A, B] = CCAA;
 const SIN = singularesDe(A, B);
 const nombreDe = (id: string) => POLITICAS.find((p) => p.id === id)?.nombre ?? id;
 const NOMBRES_SIN = SIN.map((id) => nombreDe(id).toLowerCase()).join(", ");
-const QUIEN_SIN = [...new Set(SIN.flatMap((id) => notasCompetencia(id).map((n) => NOMBRE[n.quien])))].join(" y ");
 const COLOR_AREA: Record<string, string> = { "1": "var(--a1)", "2": "var(--a2)", "3": "var(--a3)", "4": "var(--a4)", "9": "var(--a9)" };
 
 type Abrir = (id: string) => void;
@@ -28,7 +28,8 @@ const VISTAS: { id: Vista; nombre: string }[] = [
   { id: "ingresos", nombre: "Ingresos y financiación" },
   { id: "metodo", nombre: "Cómo leer los datos" },
 ];
-interface Estado { vista: Vista; anio: number; u: Unidad; ficha: string | null }
+type Clasificacion = "politicas" | "cofog";
+interface Estado { clasificacion: Clasificacion; vista: Vista; anio: number; u: Unidad; ficha: string | null }
 
 // ---------- estado en la dirección (#gasto?anio=2024&u=hab&ficha=31) ----------
 function leerHash(): Estado {
@@ -40,12 +41,13 @@ function leerHash(): Estado {
   const ficha = p.get("ficha");
   return {
     vista,
+    clasificacion: vista === "gasto" && p.get("clasificacion") === "cofog" && !(ficha && partida(ficha)) ? "cofog" : "politicas",
     anio: ANIOS.includes(anio) ? anio : ANIOS[ANIOS.length - 1],
     u: u === "mill" ? "mill" : "hab",
     ficha: ficha && partida(ficha) ? ficha : null,
   };
 }
-const hashDe = (e: Estado) => `#${e.vista}?anio=${e.anio}&u=${e.u}${e.ficha ? `&ficha=${e.ficha}` : ""}`;
+const hashDe = (e: Estado) => `#${e.vista}?anio=${e.anio}&u=${e.u}${e.vista === "gasto" && e.clasificacion === "cofog" ? "&clasificacion=cofog" : ""}${e.ficha ? `&ficha=${e.ficha}` : ""}`;
 function escribirHash(e: Estado) {
   history.replaceState(null, "", hashDe(e));
 }
@@ -145,7 +147,7 @@ function Tarjetas({ anio, u, verPorQue }: { anio: number; u: Unidad; verPorQue: 
         <span className="kpi-v num">{fmt(Math.abs(v(B) - v(A)), unidad)} <small>más que {NOMBRE[MENOS]}</small></span>
         <ul className="kpi-l">
           <li>Un <b>{fmtNum(Math.abs(inv(pct)))} %</b> más por habitante</li>
-          {pctSin !== null && <li>Sin {NOMBRES_SIN} (solo {QUIEN_SIN}): <b>{fmtNum(Math.abs(inv(pctSin)))} %</b> {pctSin * pctSigno >= 0 ? "más" : "menos"}</li>}
+          {pctSin !== null && <li>Sin la política {SIN.join(", ")} ({NOMBRES_SIN}) en ambas comunidades: <b>{fmtNum(Math.abs(inv(pctSin)))} %</b> {pctSin * pctSigno >= 0 ? "más" : "menos"}</li>}
           {ajSin !== null && <li>Teniendo en cuenta la edad y el reparto de la población{SIN.length ? ", y sin esa política" : ""}: <b>{fmtNum(Math.abs(inv(ajSin)))} %</b> {ajSin * pctSigno >= 0 ? "más" : "menos"}</li>}
           {mill && <li>{NOMBRE[B]} tiene un {fmtNum(Math.abs(masHab))} % {masHab >= 0 ? "más" : "menos"} de habitantes que {NOMBRE[A]}</li>}
         </ul>
@@ -219,7 +221,7 @@ function Titulares({ anio, abrir }: { anio: number; abrir: Abrir }) {
           <div className="insight" key={c}>
             <span className="k">Donde {NOMBRE[c]} gasta más</span>
             {singular && comparable ? (
-              <p><strong>{e(top.d)} más por habitante</strong> en <Enl p={top.p} />, una competencia que {NOMBRE[otra]} no tiene. Entre las comparables, <strong>{e(comparable.d)} más</strong> en <Enl p={comparable.p} />.</p>
+              <p><strong>{e(top.d)} más por habitante</strong> en <Enl p={top.p} />, una política con competencias distintas. Entre las comparables, <strong>{e(comparable.d)} más</strong> en <Enl p={comparable.p} />.</p>
             ) : (
               <p><strong>{e(top.d)} más por habitante</strong> en <Enl p={top.p} />.</p>
             )}
@@ -244,7 +246,7 @@ function Destacadas({ anio, abrir }: { anio: number; abrir: Abrir }) {
   return (
     <section className="panel">
       <h2>Diferencias que destacan</h2>
-      <p className="sub">€ por habitante, {anio}. Políticas en las que una comunidad gasta al menos el doble que la otra, y los intereses de la deuda. Pulsa en una para ver el detalle.</p>
+      <p className="sub">€ por habitante, {anio}. Políticas en las que una comunidad gasta al menos el doble que la otra, y la política de deuda pública. Pulsa en una para ver el detalle.</p>
       <div className="destacadas">
         {items.map(({ p, md, ct }) => {
           const max = Math.max(md, ct);
@@ -255,7 +257,7 @@ function Destacadas({ anio, abrir }: { anio: number; abrir: Abrir }) {
           const vals: [Ccaa, number][] = [[A, md], [B, ct]];
           return (
             <button key={p.id} className="dest" onClick={() => abrir(p.id)}>
-              <span className="dest-n"><Icono id={p.id} tam={18} />{p.id === "95" ? "Intereses de la deuda" : p.nombre}</span>
+              <span className="dest-n"><Icono id={p.id} tam={18} />{p.nombre}</span>
               {vals.map(([c, v]) => (
                 <span className="dest-f" key={c}>
                   <span className="dest-c">{NOMBRE[c]}</span>
@@ -271,7 +273,7 @@ function Destacadas({ anio, abrir }: { anio: number; abrir: Abrir }) {
       <details className="pliegue">
         <summary>Criterio</summary>
         <div className="pliegue-c">
-          <p>Aparecen las políticas en las que una comunidad gasta, por habitante, al menos {DESTACA.veces} veces lo que la otra y la diferencia es de {DESTACA.minDif} € o más. Están ordenadas de mayor a menor proporción. {SIN.length ? `${NOMBRES_SIN.charAt(0).toUpperCase() + NOMBRES_SIN.slice(1)} no aparece porque las competencias no son iguales. ` : ""} Los intereses de la deuda se muestran siempre. Es un criterio fijo: no dice si un gasto está justificado.</p>
+          <p>Aparecen las políticas en las que una comunidad gasta, por habitante, al menos {DESTACA.veces} veces lo que la otra y la diferencia es de {DESTACA.minDif} € o más. Están ordenadas de mayor a menor proporción. {SIN.length ? `${NOMBRES_SIN.charAt(0).toUpperCase() + NOMBRES_SIN.slice(1)} no aparece porque las competencias no son iguales. ` : ""} La política 95 se muestra siempre. Es un criterio fijo: no dice si un gasto está justificado.</p>
         </div>
       </details>
     </section>
@@ -416,7 +418,7 @@ function Puente({ anio, u, abrir, verDeuda }: { anio: number; u: Unidad; abrir: 
         <p className="ayuda">
           Ojo: los presupuestos totales no se comparan en igualdad.
           {CCAA.filter((c) => resumen(c, anio).intermediacion > 0).map((c) => ` El de ${NOMBRE[c]} incluye ${fmt(resumen(c, anio).intermediacion / 1000, "mill")} que solo reparte (sobre todo, dinero de sus ayuntamientos).`).join("")}
-          {CCAA.filter((c) => resumen(c, anio).intermediacion <= 0).map((c) => ` En ${NOMBRE[c]} ese dinero no pasa por la comunidad.`).join("")}
+          {CCAA.filter((c) => resumen(c, anio).intermediacion <= 0).map((c) => ` En ${NOMBRE[c]} la liquidación de Hacienda no registra importes que depurar por IFL o PAC.`).join("")}
           {" "}La devolución de préstamos es dinero del presupuesto, pero paga deuda de gastos de años anteriores y se cubre sobre todo con préstamos nuevos.
           Lo que queda por pagar se ve mejor en la deuda acumulada: {CCAA.filter((c) => DEUDA[c]?.[String(anio)]).map((c) => `${NOMBRE[c]} ${fmt((DEUDA[c][String(anio)] * 1000) / poblacion(c, anio), "hab")}`).join(" y ")} por habitante
           a 31 de diciembre de {anio}. <button className="enlace" onClick={verDeuda}>Ver la deuda</button>
@@ -515,7 +517,7 @@ function Fuera({ anio }: { anio: number }) {
         </tbody>
         <tfoot><tr className="area"><td>Total de obligaciones registradas (Hacienda)</td>{CCAA.map((c) => <td key={c} className="num">{m(r[c].total)}</td>)}</tr></tfoot>
       </table>
-      <p className="ayuda">Intereses de la deuda en {anio} (dentro del gasto comparado): {CCAA.map((c) => `${NOMBRE[c]} ${m(r[c].intereses)}`).join(", ")}.</p>
+      <p className="ayuda">Gastos financieros de la política 95 en {anio} (capítulo 3): {CCAA.map((c) => `${NOMBRE[c]} ${m(r[c].intereses)}`).join(", ")}.</p>
     </div>
   );
 }
@@ -691,7 +693,7 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
 
 // ---------- página ----------
 export function App() {
-  const [estado, setEstado] = useState<Estado>({ vista: "resumen", anio: ANIOS[ANIOS.length - 1], u: "hab", ficha: null });
+  const [estado, setEstado] = useState<Estado>({ clasificacion: "politicas", vista: "resumen", anio: ANIOS[ANIOS.length - 1], u: "hab", ficha: null });
   // Fichas abiertas una encima de otra: «Volver» recorre las anteriores (sin tocar el historial del navegador)
   const pila = useRef<string[]>([]);
   useEffect(() => {
@@ -719,7 +721,7 @@ export function App() {
   const Siguiente = () => siguiente ? (
     <div className="siguiente"><button className="btn" onClick={() => ir(siguiente.id)}>Siguiente: {siguiente.nombre} →</button></div>
   ) : null;
-  const enlace = (v: Vista) => `#${v}?anio=${anio}&u=${u}`;
+  const enlace = (v: Vista) => hashDe({ ...estado, vista: v, ficha: null });
   const dep = CCAA.map((c) => ({ c, ifl: depuracionDe(c, anio, "94"), pac: depuracionDe(c, anio, "41") }));
   const conDep = dep.filter((x) => x.ifl + x.pac > 0), sinDep = dep.filter((x) => x.ifl + x.pac <= 0);
   const totalHab = (c: Ccaa) => (resumen(c, anio).total * 1000) / poblacion(c, anio);
@@ -738,7 +740,7 @@ export function App() {
         {vista === "resumen" && (
           <section className="intro">
             <h1>{NOMBRE[A]} y {NOMBRE[B]}: ¿en qué gastan su presupuesto?</h1>
-            <p>Lo que cada comunidad gastó de verdad (presupuesto liquidado), política a política, con los datos del Ministerio de Hacienda.</p>
+            <p>Obligaciones reconocidas por política de gasto, con la liquidación consolidada del Ministerio de Hacienda.</p>
           </section>
         )}
 
@@ -761,7 +763,7 @@ export function App() {
                 {conDep.filter((x) => IFL_NOTA[x.c]).map((x) => (
                   <Fragment key={x.c}> Lo de los ayuntamientos pasa por {NOMBRE[x.c]} porque {IFL_NOTA[x.c].texto} (<a href={IFL_NOTA[x.c].fuente.url}>{IFL_NOTA[x.c].fuente.texto}</a>).</Fragment>
                 ))}
-                {sinDep.length ? ` En ${sinDep.map((x) => NOMBRE[x.c]).join(" y ")}, el Estado paga directamente a cada ayuntamiento y ese dinero no entra en el presupuesto de la comunidad: no hay nada que quitar.` : ""}
+                {sinDep.length ? ` En ${sinDep.map((x) => NOMBRE[x.c]).join(" y ")}, Hacienda registra el mismo importe antes y después de depurar IFL y PAC.` : ""}
                 {" "}Así las dos se comparan sin él.
               </li>
               <li>Si se cuenta <b>todo el presupuesto</b>, con la devolución de préstamos y lo que solo se reparte: {CCAA.map((c) => `${NOMBRE[c]} ${fmt(totalHab(c), "hab")}`).join(" y ")} por habitante. La devolución se explica en <a href={enlace("ingresos")} onClick={(e) => { e.preventDefault(); ir("ingresos"); }}>Deuda</a>.</li>
@@ -770,6 +772,7 @@ export function App() {
           </div>
         </details>
 
+        <Contraste anio={anio} u={u} />
         <DeCada100 anio={anio} abrir={abrir} />
         <Titulares anio={anio} abrir={abrir} />
         <Destacadas anio={anio} abrir={abrir} />
@@ -777,6 +780,10 @@ export function App() {
         </>}
 
         {vista === "gasto" && <>
+        <Seg<Clasificacion> etiqueta="Clasificación del gasto" valor={estado.clasificacion}
+          opciones={[["politicas", "Políticas presupuestarias"], ["cofog", "Funciones COFOG"]]}
+          cambiar={(clasificacion) => cambiar({ clasificacion, ficha: null })} />
+        {estado.clasificacion === "cofog" ? <Funciones anio={anio} u={u} /> : <>
         <section className="panel">
           <h2>En qué gasta cada una</h2>
           <p className="sub">{UNIDAD_TXT[u]}, {anio}. Pulsa en un área para ver sus políticas, y en una política para ver su detalle.</p>
@@ -809,6 +816,7 @@ export function App() {
           <p className="sub">{UNIDAD_TXT[u]}, {anio}.</p>
           <Tabla anio={anio} u={u} abrir={abrir} />
         </section>
+        </>}
         <Siguiente />
         </>}
 
@@ -852,7 +860,7 @@ function Metodo() {
       <p>
         De la <a href={FUENTE.gasto_url}>liquidación de los presupuestos de las comunidades autónomas</a> que publica el Ministerio de Hacienda: datos
         consolidados y definitivos, descargas «Clasificación Funcional» y «Clasificación Funcional por capítulos». Son <b>obligaciones reconocidas</b>:
-        lo que la comunidad se comprometió a pagar ese año, no lo que presupuestó. Importes en euros corrientes de cada año.
+        el gasto que la comunidad reconoció como obligación de pago del ejercicio. Importes en euros corrientes de cada año.
       </p>
       <p>
         «¿De dónde sale el dinero?» usa la descarga «Ingresos y Gastos por capítulos» y la evolución, la «Serie Consolidados» (por capítulos, 1984-2024;
@@ -864,6 +872,9 @@ function Metodo() {
         comunidades de régimen común): Fondo de Garantía, Fondo de Suficiencia, fondos de Competitividad y Cooperación, la valoración de las competencias que no
         tienen todas y la población ajustada. País Vasco y Navarra tienen su propio sistema (concierto y convenio) y no están.
       </p>
+      <h3>Contabilidad nacional y funciones COFOG</h3>
+      <p>El SEC 2010 registra las operaciones por devengo e incluye las unidades clasificadas como administración regional (S.1312). Consolida las transferencias internas. Una transferencia propia a otra administración puede seguir formando parte del gasto regional.</p>
+      <p>COFOG agrupa el gasto SEC en diez funciones. Su calendario de revisión puede diferir del de las operaciones económicas. Cada vista enlaza el libro del año e indica su edición. Ambas usan la población del INE a 1 de julio para los importes por habitante.</p>
       <h3>Qué se compara</h3>
       <ul>
         <li><b>Consolidado.</b> Suma la administración general y los organismos de cada comunidad, quitando lo que se transfieren entre ellos.</li>
@@ -878,11 +889,11 @@ function Metodo() {
           ayuntamiento y ese dinero no pasa por el presupuesto de la comunidad. Sin depurar, el presupuesto de una comunidad intermediaria parecería mucho mayor
           sin que gaste más en sus servicios.
         </li>
-        <li><b>Sin operaciones financieras.</b> Quitamos los capítulos 8 (préstamos concedidos y participaciones) y 9 (devolución de préstamos). En la política «Deuda pública» quedan los intereses.</li>
+        <li><b>Sin operaciones financieras.</b> Quitamos los capítulos 8 (préstamos concedidos y participaciones) y 9 (devolución de préstamos). La política «Deuda pública» conserva los intereses y otros gastos financieros.</li>
         <li><b>Por habitante.</b> Dividimos entre la población a 1 de julio del año (INE, <a href={FUENTE.poblacion_url}>Estadística Continua de Población</a>).</li>
-        <li><b>«De cada 100 €».</b> Lo que pesa cada partida dentro del gasto comparado de esa comunidad. En «de cada 100 €» se redondea a euros enteros de forma que sumen 100.</li>
+        <li><b>«De cada 100 €».</b> Lo que pesa cada partida dentro del gasto comparado de esa comunidad. Cada partida se redondea al euro más próximo, por lo que la suma puede diferir de 100 €.</li>
         <li><b>Qué incluye cada partida.</b> Descripción orientativa de lo que suele ir en cada política de la clasificación por programas que usa Hacienda (la misma estructura que los Presupuestos Generales del Estado). Cada comunidad decide en qué programa coloca cada gasto.</li>
-        <li><b>Diferencias que destacan.</b> Criterio fijo: por habitante, una comunidad gasta al menos {DESTACA.veces} veces lo que la otra y la diferencia es de {DESTACA.minDif} € o más (sin seguridad y prisiones). Los intereses de la deuda se muestran siempre.</li>
+        <li><b>Diferencias que destacan.</b> Criterio fijo: por habitante, una comunidad gasta al menos {DESTACA.veces} veces lo que la otra y la diferencia es de {DESTACA.minDif} € o más (sin seguridad y prisiones). La política 95 se muestra siempre.</li>
         <li><b>En qué se va el dinero.</b> El detalle de cada política reparte su gasto por capítulos del presupuesto (personal, compras, transferencias, inversiones…). Hacienda no publica ese reparto en la versión depurada: en agricultura y transferencias a otras administraciones de Cataluña incluye el dinero que solo se reparte, y se avisa.</li>
       </ul>
       <h3>Límites</h3>
@@ -894,7 +905,7 @@ function Metodo() {
         <li><b>Clasificación.</b> Cada comunidad asigna sus programas a las políticas; Hacienda los homogeneiza, pero puede haber diferencias de criterio.</li>
       </ul>
       <h3>Ficheros</h3>
-      <p>Las cifras salen sin retocar de los Excel descargados (miles de euros). La extracción comprueba que las políticas suman el total de cada área, que las áreas suman el total y que las dos descargas coinciden. Los datos de cada año se pueden descargar en CSV debajo de la tabla.</p>
+      <p>Los libros presupuestarios de Hacienda expresan los importes en miles de euros y los de la IGAE, en millones. La extracción comprueba que las políticas suman el total de cada área, que las áreas suman el total y que las dos descargas coinciden. Los datos de cada año se pueden descargar en CSV debajo de la tabla.</p>
     </section>
   );
 }

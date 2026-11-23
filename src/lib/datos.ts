@@ -54,7 +54,7 @@ const CORTO: Record<string, string> = {
   "92": "Servicios generales",
   "93": "Administración financiera y tributaria",
   "94": "Transferencias a otras administraciones",
-  "95": "Deuda pública (intereses)",
+  "95": "Gastos financieros de la deuda (política 95)",
 };
 
 /**
@@ -184,7 +184,7 @@ export const UNIDAD_TXT: Record<Unidad, string> = { hab: "€ por habitante", pc
 export const CAPITULOS: { n: number; nombre: string; oficial: string; explica: string }[] = [
   { n: 1, nombre: "Sueldos del personal", oficial: "Capítulo 1. Gastos de personal", explica: "Sueldos y cotizaciones sociales de los trabajadores de la comunidad y de sus organismos: médicos, profesores, funcionarios…" },
   { n: 2, nombre: "Compras de bienes y servicios", oficial: "Capítulo 2. Gastos corrientes en bienes y servicios", explica: "Lo que la comunidad compra o contrata para funcionar: material, suministros, alquileres, limpieza, mantenimiento y servicios hechos por otros, como los conciertos sanitarios." },
-  { n: 3, nombre: "Intereses", oficial: "Capítulo 3. Gastos financieros", explica: "Intereses de la deuda y otros gastos de los préstamos. Casi todos se apuntan en la política «Deuda pública»; en las demás suelen ser cero. La devolución del préstamo en sí no está aquí." },
+  { n: 3, nombre: "Gastos financieros", oficial: "Capítulo 3. Gastos financieros", explica: "Intereses de la deuda y otros gastos de los préstamos. Casi todos se apuntan en la política «Deuda pública»; en las demás suelen ser cero. La devolución del préstamo en sí no está aquí." },
   { n: 4, nombre: "Transferencias y subvenciones corrientes", oficial: "Capítulo 4. Transferencias corrientes", explica: "Dinero que la comunidad entrega a otros para sus gastos del día a día, sin recibir a cambio un bien o servicio. Puede ir a familias, empresas, asociaciones, ayuntamientos o a entes y empresas públicas que no están en estas cuentas. Hacienda no publica, política a política, quién lo recibe." },
   { n: 5, nombre: "Fondo de contingencia", oficial: "Capítulo 5. Fondo de contingencia", explica: "Reserva para gastos imprevistos. Casi nunca se gasta desde aquí: se pasa a otros capítulos." },
   { n: 6, nombre: "Inversiones", oficial: "Capítulo 6. Inversiones reales", explica: "Obras, edificios, equipos y otros bienes duraderos de la propia comunidad: un hospital, una carretera, un equipo de resonancia…" },
@@ -262,7 +262,7 @@ export const QUE_INCLUYE: Record<string, string> = {
   "92": "Administración general: función pública, patrimonio, informática, estadística, boletín oficial y otros servicios comunes.",
   "93": "Gestión de los impuestos de la comunidad, tesorería y control interno de las cuentas.",
   "94": "Dinero para ayuntamientos, comarcas y otras administraciones. La versión depurada no incluye lo que la comunidad solo hace llegar a las entidades locales.",
-  "95": "Intereses de la deuda de la comunidad. La devolución de los préstamos no se cuenta en esta página.",
+  "95": "Intereses y otros gastos financieros registrados en la política de deuda pública. La devolución de los préstamos no se cuenta en esta página.",
 };
 
 /** Criterio fijo de «Diferencias que destacan» (€ por habitante): una comunidad gasta al menos el doble y la diferencia es de 5 € o más. */

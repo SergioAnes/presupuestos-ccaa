@@ -298,14 +298,15 @@ def sfa_hoja(wb, *claves):
     return next((ws for ws in wb.worksheets if all(k in ws.title for k in claves)), None)
 
 
-def sfa_filas(ws):
+def sfa_filas(ws, columna=None):
     """{id_ccaa: [valores numéricos de la fila]} y la fila de total."""
     out, total = {}, None
     for r in ws.iter_rows(values_only=True):
         if not r or r[0] is None:
             continue
         nom = texto(r[0]).lower()
-        nums = [x for x in r[1:] if isinstance(x, (int, float))]
+        valores = r[1:] if columna is None else r[columna:columna + 1]
+        nums = [x for x in valores if isinstance(x, (int, float))]
         if not nums:
             continue
         if nom.startswith("total"):
@@ -326,9 +327,12 @@ for ruta in sorted(glob.glob(os.path.join(ORIGEN, "liquidacion-sfa", "cuadros-li
     fs, fs_t = sfa_filas(sfa_hoja(wb, "Fondo de Suficiencia"))
     rf, _ = sfa_filas(sfa_hoja(wb, "Recursos financieros"))
     fh, _ = sfa_filas(sfa_hoja(wb, "Finan homog"))
+    hoja_poblacion = sfa_hoja(wb, "1.9.1.", "Pobl")
+    pa, _ = sfa_filas(hoja_poblacion, columna=23)
+    comprobar("Población Ajustada" in texto(hoja_poblacion["X4"].value), f"Cabecera de población inesperada: {anio}")
     ld, _ = sfa_filas(sfa_hoja(wb, "Liquidación definitiva"))
     for cid in SFA_NOMBRES:
-        comprobar(all(cid in t for t in (fg, fs, rf, fh, ld)), f"Liquidación SFA {anio}: falta {cid}")
+        comprobar(all(cid in t for t in (fg, fs, rf, fh, pa, ld)), f"Liquidación SFA {anio}: falta {cid}")
     if errores:
         sys.exit("\n".join(errores))
     comprobar(abs(sum(v[3] for v in fg.values()) - fg_t[3]) < 15, f"Liquidación SFA {anio}: el Fondo de Garantía no suma el total")
@@ -347,7 +351,7 @@ for ruta in sorted(glob.glob(os.path.join(ORIGEN, "liquidacion-sfa", "cuadros-li
             "no_homogeneas": round(fh[cid][1], 2),
             "homogenea": round(fh[cid][2], 2),
             "homogenea_hab_ajustado": round(fh[cid][4], 2),
-            "poblacion_ajustada": round(fh[cid][2] / fh[cid][4] * 1000),
+            "poblacion_ajustada": int(pa[cid][0]),
         }
     pol = sfa_hoja(wb, "Integrac.Pol.Cat")
     if pol:

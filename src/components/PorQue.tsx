@@ -83,14 +83,14 @@ export function PorQue({ a: c1, b: c2, anio }: { a: Ccaa; b: Ccaa; anio: number 
       <div className="pq-resumen">
         <p>
           Por habitante, {NOMBRE[A]} gasta <b>{ed(dif.hab.d)} ({pc(dif.hab.p)})</b>. Teniendo en cuenta la edad y el reparto de la población
-          (habitante ajustado) y sin {nombresSin || "las competencias que solo tiene una"}, la diferencia es <b>{ed(dif.ajSin.d)} ({pc(dif.ajSin.p)})</b>.
+          (habitante ajustado) y retirando de ambas la política {sin.join(", ")} ({nombresSin}), la diferencia es <b>{ed(dif.ajSin.d)} ({pc(dif.ajSin.p)})</b>.
         </p>
         <p>
-          {NOMBRE[masImp]} recauda <b>{e(Math.abs(imp(masImp) - imp(otraImp)))} más por habitante</b> en impuestos, pero el sistema de financiación
+          {NOMBRE[masImp]} reconoce <b>{e(Math.abs(imp(masImp) - imp(otraImp)))} más por habitante</b> en derechos por impuestos directos e indirectos, pero el sistema de financiación
           le deja un saldo de <b>{ed(saldo(masImp))}</b> por habitante, frente a <b>{ed(saldo(otraImp))}</b> de {NOMBRE[otraImp]}.
         </p>
         <p>
-          Con las mismas competencias, el sistema da {casiIgual ? <>prácticamente lo mismo a las dos (<b>{e(homogeneaConFondos(f[A]))}</b> y <b>{e(homogeneaConFondos(f[B]))}</b> por habitante ajustado)</> : <>a {NOMBRE[A]} <b>{ed(dif.fin.d)} ({pc(dif.fin.p)})</b> por habitante ajustado respecto a {NOMBRE[B]}</>}.
+          Según el cálculo de financiación homogénea con fondos, el sistema da {casiIgual ? <>prácticamente lo mismo a las dos (<b>{e(homogeneaConFondos(f[A]))}</b> y <b>{e(homogeneaConFondos(f[B]))}</b> por habitante ajustado)</> : <>a {NOMBRE[A]} <b>{ed(dif.fin.d)} ({pc(dif.fin.p)})</b> por habitante ajustado respecto a {NOMBRE[B]}</>}.
           {" "}La parte del gasto que no corresponde a más financiación del sistema se cubre con otros ingresos (impuestos propios por encima de lo que considera el
           sistema, tasas, otros fondos) o con déficit; con estos datos no se puede repartir con exactitud. Nada de esto dice si el gasto está justificado.
         </p>
@@ -153,7 +153,7 @@ export function PorQue({ a: c1, b: c2, anio }: { a: Ccaa; b: Ccaa; anio: number 
         </div>
       </details>
 
-      <h3 className="h3-panel">Con las mismas competencias</h3>
+      <h3 className="h3-panel">Financiación a competencias homogéneas</h3>
       <div className="tabla-wrap">
         <table className="tabla pq">
           <thead><tr><th>€ por habitante ajustado</th>{anios.map((x) => <th key={x}>{x}</th>)}</tr></thead>
@@ -173,7 +173,7 @@ export function PorQue({ a: c1, b: c2, anio }: { a: Ccaa; b: Ccaa; anio: number 
           <ul>
             <li><b>Habitante ajustado.</b> Es la población que usa el sistema de financiación para repartir el Fondo de Garantía: pondera la población por edad (los mayores y los niños cuentan más), superficie, dispersión e insularidad (Ley 22/2009). La sacamos de los cuadros de la liquidación.</li>
             <li><b>Financiación homogénea.</b> Los recursos del sistema (impuestos con normas comunes, Fondo de Garantía y Fondo de Suficiencia) menos la valoración de las competencias que no tienen todas, según Hacienda. Le sumamos los fondos de Competitividad y Cooperación y dividimos entre la población ajustada: es un cálculo nuestro con cifras oficiales.</li>
-            <li><b>Sin competencias singulares.</b> En el gasto quitamos las políticas en las que las dos comunidades no tienen las mismas competencias ({nombresSin || "ninguna"}). Es una aproximación: Hacienda valora esas competencias en la financiación, pero no dice cuánto se gasta en ellas.</li>
+            <li><b>Sin la política {sin.join(", ")} en ambas comunidades.</b> Retiramos el importe completo de {nombresSin}, incluidos los servicios comunes de esa política. Es una aproximación: Hacienda valora esas competencias en la financiación, pero no dice cuánto se gasta en ellas.</li>
             <li><b>Fechas.</b> El sistema se liquida dos años después. El presupuesto de cada año recoge pagos a cuenta de ese año y la liquidación de dos años antes, así que la comparación con los ingresos del presupuesto es aproximada.</li>
           </ul>
           <p>Fuente: <a href={FUENTE.sfa_url}>{FUENTE.sfa}</a>. País Vasco y Navarra no están en este sistema (concierto y convenio económico).</p>

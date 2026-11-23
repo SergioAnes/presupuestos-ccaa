@@ -55,7 +55,7 @@ Primera versión: Madrid y Cataluña, 2022, 2023 y 2024. Proyecto hermano de `sa
 - Sistema de financiación: `extraer_liquidaciones.py` lee los cuadros de la liquidación (`datos-originales/liquidacion-sfa/
   cuadros-liquidacion-AAAA.xlsx`) de las 15 comunidades de régimen común (País Vasco y Navarra no están: concierto y
   convenio). Comprueba capacidad + Fondo de Garantía + Suficiencia = recursos y la coherencia entre cuadros. La población
-  ajustada sale de financiación homogénea ÷ financiación homogénea por habitante ajustado (cuadro 2.2.3).
+  ajustada se toma del cuadro 1.9.1, columna «Unidades de necesidad · Población Ajustada».
   «¿Por qué A gasta más que B?» (`src/components/PorQue.tsx`) es genérico para cualquier pareja: textos calculados, sin
   causas. Financiación homogénea por habitante ajustado + fondos de Competitividad y Cooperación = cálculo propio (decirlo).
   «Sin competencias singulares» usa `COMPETENCIAS_SINGULARES` de `datos.ts` (hoy CT: 13; al añadir PV y NC, su policía).
