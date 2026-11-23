@@ -35,8 +35,12 @@ export function Contraste({ anio, u }: { anio: number; u: Unidad }) {
   ];
   return <section className="panel">
     <h2>Dos medidas del gasto autonómico</h2>
-    <p className="sub">{anio} · {UNIDAD_TXT[u]}. El presupuesto recoge obligaciones reconocidas. El SEC mide cuándo se genera el gasto e incluye todas las unidades de la administración regional según la contabilidad nacional.</p>
+    <p><b>El presupuesto liquidado</b> muestra el gasto que la comunidad ha reconocido con cargo a su presupuesto. Para esta comparación se descuenta, entre otras partidas, el dinero que solo pasa por sus cuentas para llegar a ayuntamientos o agricultores.</p>
+    <p><b>El Sistema Europeo de Cuentas (SEC 2010)</b> mide el gasto según el año en que se produce. También cuenta el gasto de entidades que las reglas europeas consideran parte de la administración regional, aunque tengan cuentas separadas del presupuesto.</p>
+    <p><b>Por ejemplo,</b> imagina que un hospital recibe material en diciembre y la comunidad reconoce la factura con cargo al presupuesto del año siguiente. El SEC cuenta ese material en diciembre y la liquidación lo recoge en el año siguiente. La fecha del pago puede ser distinta de ambas.</p>
+    <p className="sub">{anio} · {UNIDAD_TXT[u]}. Lee hacia abajo para comparar los dos métodos en una comunidad. Lee de izquierda a derecha para comparar las comunidades con el mismo método.</p>
     <TablaCuentas filas={filas} anio={anio} u={u} />
+    <p className="ayuda">La distancia entre las dos filas recoge el efecto conjunto de estos y otros ajustes. Para saber cuánto explica cada uno en {anio} haría falta el desglose de esos ajustes por comunidad.</p>
     <Fuente datos={datos} />
   </section>;
 }
@@ -49,7 +53,7 @@ export function Funciones({ anio, u }: { anio: number; u: Unidad }) {
   }));
   return <section className="panel">
     <h2>Gasto por funciones COFOG</h2>
-    <p className="sub">{anio} · {UNIDAD_TXT[u]}. Las diez divisiones agrupan el gasto por su finalidad. Cada porcentaje usa el total de la misma edición funcional.</p>
+    <p className="sub">{anio} · {UNIDAD_TXT[u]}. COFOG reparte el gasto del SEC en diez grupos según para qué se usa, como salud o educación. Una política presupuestaria con un nombre parecido puede incluir gastos distintos. Cada porcentaje indica qué parte del total de esta tabla corresponde a esa función.</p>
     <TablaCuentas filas={[...filas, { nombre: "Total de las diez divisiones", importe: total }]} anio={anio} u={u} total={total} />
     <Fuente datos={datos} />
   </section>;

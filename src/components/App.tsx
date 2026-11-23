@@ -873,8 +873,9 @@ function Metodo() {
         tienen todas y la población ajustada. País Vasco y Navarra tienen su propio sistema (concierto y convenio) y no están.
       </p>
       <h3>Contabilidad nacional y funciones COFOG</h3>
-      <p>El SEC 2010 registra las operaciones por devengo e incluye las unidades clasificadas como administración regional (S.1312). Consolida las transferencias internas. Una transferencia propia a otra administración puede seguir formando parte del gasto regional.</p>
-      <p>COFOG agrupa el gasto SEC en diez funciones. Su calendario de revisión puede diferir del de las operaciones económicas. Cada vista enlaza el libro del año e indica su edición. Ambas usan la población del INE a 1 de julio para los importes por habitante.</p>
+      <p>El Sistema Europeo de Cuentas (SEC 2010) utiliza la misma regla en toda la UE para asignar un gasto a un año. En una compra de material, por ejemplo, cuenta cuándo se entrega. A esta regla se la llama «devengo».</p>
+      <p>También importa quién hace el gasto. Si la comunidad transfiere dinero a un organismo que forma parte de la misma administración regional (S.1312) y este compra material, el SEC cuenta la compra una sola vez. Si la comunidad concede una subvención propia a un ayuntamiento, esa transferencia sí puede contar como gasto regional. El ayuntamiento pertenece a otra administración.</p>
+      <p>La clasificación COFOG agrupa el gasto del SEC según su finalidad. La IGAE puede actualizar el gasto total y el reparto por funciones en fechas distintas. Por eso, para un mismo año, el total de las diez funciones puede diferir del gasto SEC del resumen. La fecha y el enlace al libro oficial figuran debajo de cada tabla. Para calcular euros por habitante, ambas vistas usan la población del INE a 1 de julio.</p>
       <h3>Qué se compara</h3>
       <ul>
         <li><b>Consolidado.</b> Suma la administración general y los organismos de cada comunidad, quitando lo que se transfieren entre ellos.</li>
