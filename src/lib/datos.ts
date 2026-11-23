@@ -338,11 +338,15 @@ export const IPC_FUENTE = { texto: ipcBruto.fuente as string, url: ipcBruto.url 
 /** Pasa un importe de euros de `desde` a euros de `hasta` con el IPC. */
 export const aEurosDe = (v: number, desde: number, hasta: number) =>
   IPC[String(desde)] && IPC[String(hasta)] ? (v * IPC[String(hasta)]) / IPC[String(desde)] : v;
-/** Gasto comparado por habitante de una partida (o "T" para el total), en euros de cada año o de `real`. */
-export function habPartida(c: Ccaa, anio: number, id: string, real?: number): number {
+/** Gasto de una partida (o "T" para el total) en la unidad y a los precios elegidos. */
+export function importePartida(c: Ccaa, anio: number, id: string, u: Unidad, real?: number): number {
   const miles = id === "T" ? resumen(c, anio).gasto : gastoMiles(c, anio, id);
-  const v = (miles * 1000) / poblacion(c, anio);
-  return real ? aEurosDe(v, anio, real) : v;
+  const v = enUnidad(miles, u, c, anio);
+  return real && u !== "pct" ? aEurosDe(v, anio, real) : v;
+}
+
+export function habPartida(c: Ccaa, anio: number, id: string, real?: number): number {
+  return importePartida(c, anio, id, "hab", real);
 }
 
 // ---------- variaciones inusuales (criterio fijo; la fuente no las explica) ----------

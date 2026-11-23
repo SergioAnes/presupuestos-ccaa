@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  ANIOS_SERIE, CCAA, COLOR_CCAA, DEUDA, ECONOMICA, ECONOMICA_DEP, FUENTE, economicaComparable, NOMBRE, SERIE, aEurosDe, fmt, porHab,
+  ANIOS_SERIE, CCAA, COLOR_CCAA, DEUDA, ECONOMICA, ECONOMICA_DEP, FUENTE, economicaComparable, NOMBRE, SERIE, UNIDAD_TXT, aEurosDe, enUnidad, fmt, porHab,
   type Ccaa, type Unidad,
 } from "@/lib/datos";
 
@@ -137,7 +137,7 @@ const MEDIDAS: { id: string; nombre: string; ayuda: string; f: (c: Ccaa, a: numb
   { id: "impuestos", nombre: "Impuestos", ayuda: "Capítulos 1 y 2 de ingresos: impuestos directos e indirectos, propios o cedidos.", f: (c, a) => { const x = SERIE[c].ingresos[String(a)]; return x ? x[0] + x[1] : undefined; } },
 ];
 
-export function Evolucion({ anio }: { anio: number }) {
+export function Evolucion({ anio, u }: { anio: number; u: Unidad }) {
   const [medida, setMedida] = useState("deuda");
   const [marcado, setMarcado] = useState<number | null>(null);
   const [real, setReal] = useState(true);
@@ -154,9 +154,15 @@ export function Evolucion({ anio }: { anio: number }) {
   const anios = ANIOS_SERIE;
   if (anios.length < 2) return null;
   const ultimoAnio = anios[anios.length - 1];
-  const serie = (c: Ccaa) => anios.map((a) => { const v = m.f(c, a); if (v === undefined) return null; const h = porHab(v, c, a); return real ? aEurosDe(h, a, ultimoAnio) : h; });
+  const serie = (c: Ccaa) => anios.map((a) => {
+    const miles = m.f(c, a);
+    if (miles === undefined) return null;
+    const importe = enUnidad(miles, u, c, a);
+    return real ? aEurosDe(importe, a, ultimoAnio) : importe;
+  });
+  const lectura = (v: number | null) => v === null ? "sin dato" : fmt(v, u);
   const s = Object.fromEntries(CCAA.map((c) => [c, serie(c)])) as Record<Ccaa, (number | null)[]>;
-  const W = Math.max(300, ancho), H = W < 500 ? 220 : 260, L = 44, R = 66, T = 12, B = 26;
+  const W = Math.max(300, ancho), H = W < 500 ? 220 : 260, L = u === "mill" ? 54 : 44, R = u === "mill" ? 84 : 66, T = 12, B = 26;
   const vals = [...s.MD, ...s.CT].filter((v): v is number => v !== null);
   const paso = (() => { const bruto = Math.max(...vals) / 4; const p = 10 ** Math.floor(Math.log10(bruto || 1)); return [1, 2, 2.5, 5, 10].map((k) => k * p).find((k) => k >= bruto) ?? p * 10; })();
   const ymax = Math.ceil(Math.max(...vals) / paso) * paso || 1;
@@ -174,7 +180,7 @@ export function Evolucion({ anio }: { anio: number }) {
   return (
     <section className="panel">
       <h2>Evolución desde {anios[0]}</h2>
-      <p className="sub">€ por habitante{real ? `, en euros de ${anios[anios.length - 1]} (descontada la inflación)` : " de cada año (sin descontar la inflación)"}.</p>
+      <p className="sub">{UNIDAD_TXT[u]}{real ? `, en euros de ${anios[anios.length - 1]} (descontada la inflación)` : " de cada año (sin descontar la inflación)"}.</p>
       <div className="seg sm" role="group" aria-label="Euros" style={{ marginTop: 10 }}>
         <button aria-pressed={real} onClick={() => setReal(true)}>Sin inflación</button>
         <button aria-pressed={!real} onClick={() => setReal(false)}>Euros de cada año</button>
@@ -185,11 +191,11 @@ export function Evolucion({ anio }: { anio: number }) {
       <p className="ayuda">{m.ayuda}</p>
       <div className="lectura" aria-live="polite">
         <b>{anios[iVer]}</b>
-        {CCAA.map((c) => <span key={c}><i style={{ background: COLOR[c] }} />{NOMBRE[c]}: <b className="num">{s[c][iVer] === null ? "sin dato" : `${nf.format(s[c][iVer]!)} €`}</b></span>)}
+        {CCAA.map((c) => <span key={c}><i style={{ background: COLOR[c] }} />{NOMBRE[c]}: <b className="num">{lectura(s[c][iVer])}</b></span>)}
         <span className="lectura-ayuda">Toca o pasa por el gráfico para ver otro año.</span>
       </div>
       <div className="chart" ref={caja}>
-        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${m.nombre}, € por habitante, ${anios[0]}-${anios[anios.length - 1]}`}>
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${m.nombre}, ${UNIDAD_TXT[u]}, ${anios[0]}-${anios[anios.length - 1]}`}>
           {Array.from({ length: Math.round(ymax / paso) + 1 }, (_, k) => k * paso).map((v) => (
             <g key={v}>
               <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="var(--line)" />
@@ -206,13 +212,13 @@ export function Evolucion({ anio }: { anio: number }) {
           {CCAA.map((c) => { const i = ultimo(c); return i < 0 ? null : (
             <g key={c}>
               <circle cx={x(i)} cy={y(s[c][i]!)} r="4" fill={COLOR[c]} stroke="var(--surface)" strokeWidth="2" />
-              <text x={x(i) + 8} y={yEt[c] + 4} fontSize="12" fontWeight="700" fill="var(--fg)">{nf.format(s[c][i]!)} €</text>
+              <text x={x(i) + 8} y={yEt[c] + 4} fontSize="12" fontWeight="700" fill="var(--fg)">{lectura(s[c][i])}</text>
             </g>
           ); })}
           {anios.map((a, i) => (
             <rect key={a} x={x(i) - (W - L - R) / (anios.length - 1) / 2} y={T} width={(W - L - R) / (anios.length - 1)} height={H - T - B} fill="transparent"
               onMouseEnter={() => setMarcado(i)} onClick={() => setMarcado(i)} style={{ cursor: "pointer" }}>
-              <title>{`${a}\n` + CCAA.map((c) => `${NOMBRE[c]}: ${s[c][i] === null ? "sin dato" : nf.format(s[c][i]!) + " €"}`).join("\n")}</title>
+              <title>{`${a}\n` + CCAA.map((c) => `${NOMBRE[c]}: ${lectura(s[c][i])}`).join("\n")}</title>
             </rect>
           ))}
         </svg>

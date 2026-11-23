@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   ANIOS, AREAS, CAPITULOS, CCAA, COLOR_CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, TRANSF_EJEMPLO, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
-  DEUDA, IFL_NOTA, capitulosMiles, csv, depuracionDe, depuracionPorCapitulo, inusualesEn, notasCompetencia, sfa, singularesDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, partida, poblacion, resumen,
+  DEUDA, IFL_NOTA, capitulosMiles, csv, depuracionDe, depuracionPorCapitulo, inusualesEn, notasCompetencia, sfa, singularesDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, importePartida, partida, poblacion, resumen,
   type Ccaa, type Partida, type Unidad,
 } from "@/lib/datos";
 import { Icono } from "./Icono";
@@ -193,12 +193,12 @@ function DeCada100({ anio, abrir }: { anio: number; abrir: Abrir }) {
 }
 
 // ---------- titulares ----------
-function Titulares({ anio, abrir }: { anio: number; abrir: Abrir }) {
-  const masDe = (c: Ccaa, otra: Ccaa) => POLITICAS.map((p) => ({ p, d: hab(c, anio, p.id) - hab(otra, anio, p.id) })).sort((a, b) => b.d - a.d);
+function Titulares({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
+  const masDe = (c: Ccaa, otra: Ccaa) => POLITICAS.map((p) => ({ p, d: importePartida(c, anio, p.id, u) - importePartida(otra, anio, p.id, u) })).sort((a, b) => b.d - a.d);
   const mayor = (c: Ccaa) => [...POLITICAS].sort((a, b) => gastoMiles(c, anio, b.id) - gastoMiles(c, anio, a.id))[0];
   const pctDe = (c: Ccaa, id: string) => fmtNum(enUnidad(gastoMiles(c, anio, id), "pct", c, anio));
   const mA = mayor(A), mB = mayor(B);
-  const e = (x: number) => `${fmtNum(Math.abs(x))} €`;
+  const e = (x: number) => fmt(Math.abs(x), u);
   const Enl = ({ p }: { p: Partida }) => <button className="enlace" onClick={() => abrir(p.id)}>{p.nombre.toLowerCase()}</button>;
   return (
     <div className="titulares">
@@ -221,9 +221,9 @@ function Titulares({ anio, abrir }: { anio: number; abrir: Abrir }) {
           <div className="insight" key={c}>
             <span className="k">Donde {NOMBRE[c]} gasta más</span>
             {singular && comparable ? (
-              <p><strong>{e(top.d)} más por habitante</strong> en <Enl p={top.p} />, una política con competencias distintas. Entre las comparables, <strong>{e(comparable.d)} más</strong> en <Enl p={comparable.p} />.</p>
+              <p><strong>{e(top.d)} más{u === "hab" && " por habitante"}</strong> en <Enl p={top.p} />, una política con competencias distintas. Entre las comparables, <strong>{e(comparable.d)} más</strong> en <Enl p={comparable.p} />.</p>
             ) : (
-              <p><strong>{e(top.d)} más por habitante</strong> en <Enl p={top.p} />.</p>
+              <p><strong>{e(top.d)} más{u === "hab" && " por habitante"}</strong> en <Enl p={top.p} />.</p>
             )}
           </div>
         );
@@ -233,7 +233,7 @@ function Titulares({ anio, abrir }: { anio: number; abrir: Abrir }) {
 }
 
 // ---------- diferencias que destacan ----------
-function Destacadas({ anio, abrir }: { anio: number; abrir: Abrir }) {
+function Destacadas({ anio, u, abrir }: { anio: number; u: Unidad; abrir: Abrir }) {
   const fila = (p: Partida) => ({ p, md: hab(A, anio, p.id), ct: hab(B, anio, p.id) });
   const veces = (x: { md: number; ct: number }) => Math.max(x.md, x.ct) / Math.min(x.md, x.ct);
   const lista = POLITICAS.filter((p) => !COMPETENCIA_DISTINTA.has(p.id) && p.id !== "95")
@@ -246,14 +246,15 @@ function Destacadas({ anio, abrir }: { anio: number; abrir: Abrir }) {
   return (
     <section className="panel">
       <h2>Diferencias que destacan</h2>
-      <p className="sub">€ por habitante, {anio}. Políticas en las que una comunidad gasta al menos el doble que la otra, y la política de deuda pública. Pulsa en una para ver el detalle.</p>
+      <p className="sub">{UNIDAD_TXT[u]}, {anio}. Políticas en las que una comunidad gasta por habitante al menos el doble que la otra, y la política de deuda pública. Pulsa en una para ver el detalle.</p>
       <div className="destacadas">
-        {items.map(({ p, md, ct }) => {
+        {items.map(({ p }) => {
+          const md = importePartida(A, anio, p.id, u), ct = importePartida(B, anio, p.id, u);
           const max = Math.max(md, ct);
           const quien: Ccaa = ct >= md ? B : A;
           const otra: Ccaa = quien === B ? A : B;
           const menor = Math.min(md, ct);
-          const etiqueta = menor < 1 ? `${NOMBRE[otra]}: menos de 1 €` : `${NOMBRE[quien]}: ×${nf1.format(max / menor)}`;
+          const etiqueta = menor < 1 ? `${NOMBRE[otra]}: menos de ${u === "mill" ? "1 M€" : "1 €"}` : `${NOMBRE[quien]}: ×${nf1.format(max / menor)}`;
           const vals: [Ccaa, number][] = [[A, md], [B, ct]];
           return (
             <button key={p.id} className="dest" onClick={() => abrir(p.id)}>
@@ -262,7 +263,7 @@ function Destacadas({ anio, abrir }: { anio: number; abrir: Abrir }) {
                 <span className="dest-f" key={c}>
                   <span className="dest-c">{NOMBRE[c]}</span>
                   <span className="dest-pista"><span className="dest-barra" style={{ width: `${max > 0 ? (v / max) * 100 : 0}%`, background: COLOR[c] }} /></span>
-                  <span className="dest-v num">{v < 10 ? `${nf1.format(v)} €` : fmt(v, "hab")}</span>
+                  <span className="dest-v num">{fmt(v, u)}</span>
                 </span>
               ))}
               <span className="dest-e" style={{ borderColor: COLOR[menor < 1 ? otra : quien] }}>{etiqueta}</span>
@@ -420,7 +421,7 @@ function Puente({ anio, u, abrir, verDeuda }: { anio: number; u: Unidad; abrir: 
           {CCAA.filter((c) => resumen(c, anio).intermediacion > 0).map((c) => ` El de ${NOMBRE[c]} incluye ${fmt(resumen(c, anio).intermediacion / 1000, "mill")} que solo reparte (sobre todo, dinero de sus ayuntamientos).`).join("")}
           {CCAA.filter((c) => resumen(c, anio).intermediacion <= 0).map((c) => ` En ${NOMBRE[c]} la liquidación de Hacienda no registra importes que depurar por IFL o PAC.`).join("")}
           {" "}La devolución de préstamos es dinero del presupuesto, pero paga deuda de gastos de años anteriores y se cubre sobre todo con préstamos nuevos.
-          Lo que queda por pagar se ve mejor en la deuda acumulada: {CCAA.filter((c) => DEUDA[c]?.[String(anio)]).map((c) => `${NOMBRE[c]} ${fmt((DEUDA[c][String(anio)] * 1000) / poblacion(c, anio), "hab")}`).join(" y ")} por habitante
+          Lo que queda por pagar se ve mejor en la deuda acumulada: {CCAA.filter((c) => DEUDA[c]?.[String(anio)]).map((c) => `${NOMBRE[c]} ${fmt(conv(c, DEUDA[c][String(anio)]), un)}`).join(" y ")}{un === "hab" && " por habitante"}
           a 31 de diciembre de {anio}. <button className="enlace" onClick={verDeuda}>Ver la deuda</button>
         </p>
       )}
@@ -523,7 +524,7 @@ function Fuera({ anio }: { anio: number }) {
 }
 
 // ---------- ficha de una política o área ----------
-function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: number; abrir: Abrir; cerrar: () => void; previa?: Partida; volver: () => void }) {
+function Ficha({ id, anio, u, abrir, cerrar, previa, volver }: { id: string; anio: number; u: Unidad; abrir: Abrir; cerrar: () => void; previa?: Partida; volver: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   // El evento «close» del <dialog> (×, «Cerrar», Esc, clic fuera) se escucha directamente: React no siempre lo pasa
   const alCerrar = useRef(cerrar);
@@ -548,10 +549,9 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
   }, [id]);
   const p = partida(id)!;
   const caps = Object.fromEntries(CCAA.map((c) => [c, capitulosMiles(c, anio, id)])) as Record<Ccaa, number[]>;
-  const capHab = (c: Ccaa, i: number) => (caps[c][i] * 1000) / poblacion(c, anio);
-  // Sin filas en las que las dos comunidades están a 0 € por habitante (p. ej., intereses fuera de «Deuda pública»)
-  const filasCap = CAPITULOS.filter((k) => CCAA.some((c) => Math.abs((caps[c][k.n - 1] * 1000) / poblacion(c, anio)) >= 0.05));
-  const maxCap = Math.max(...filasCap.flatMap((k) => CCAA.map((c) => capHab(c, k.n - 1))));
+  const valorCap = (c: Ccaa, i: number) => enUnidad(caps[c][i], u, c, anio);
+  const filasCap = CAPITULOS.filter((k) => CCAA.some((c) => Math.abs(valorCap(c, k.n - 1)) >= 0.05));
+  const maxCap = Math.max(...filasCap.flatMap((k) => CCAA.map((c) => valorCap(c, k.n - 1))));
   const sumaCaps = (c: Ccaa) => caps[c].slice(0, 7).reduce((s, x) => s + x, 0);
   const dep = Object.fromEntries(CCAA.map((c) => [c, depuracionDe(c, anio, id)])) as Record<Ccaa, number>;
   const fuera = Object.fromEntries(CCAA.map((c) => [c, caps[c][7] + caps[c][8]])) as Record<Ccaa, number>;
@@ -583,8 +583,8 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
           {CCAA.map((c) => (
             <div key={c} className="ficha-kpi" style={{ borderTopColor: COLOR[c] }}>
               <span className="kpi-n"><i style={{ background: COLOR[c] }} />{NOMBRE[c]}</span>
-              <span className="kpi-v num">{fmt(hab(c, anio, id), "hab")}<small> por habitante</small></span>
-              <span className="kpi-s">{fmt(gastoMiles(c, anio, id) / 1000, "mill")} · {fmt(enUnidad(gastoMiles(c, anio, id), "pct", c, anio), "hab")} de cada 100 que gasta</span>
+              <span className="kpi-v num">{fmt(importePartida(c, anio, id, u), u)}{u === "hab" && <small> por habitante</small>}</span>
+              <span className="kpi-s">{u === "mill" ? `${fmt(hab(c, anio, id), "hab")} por habitante` : fmt(gastoMiles(c, anio, id) / 1000, "mill")} · {fmt(enUnidad(gastoMiles(c, anio, id), "pct", c, anio), "hab")} de cada 100 que gasta</span>
             </div>
           ))}
         </div>
@@ -592,11 +592,11 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
         {ANIOS.length > 1 && (
           <>
             <h3>Evolución</h3>
-            <p className="sub">€ por habitante de cada año (sin descontar la inflación).</p>
-            <MiniEvolucion id={id} />
+            <p className="sub">{UNIDAD_TXT[u]}, en euros de cada año (sin descontar la inflación).</p>
+            <MiniEvolucion id={id} u={u} />
             {inus.length > 0 && (
               <p className="aviso">
-                <b>Variación inusual:</b> {inus.map((v) => `${NOMBRE[v.ccaa]} en ${v.anio} (${v.pct > 0 ? "+" : "−"}${fmtNum(Math.abs(v.pct))} % sin inflación)`).join("; ")}.
+                <b>Variación inusual por habitante:</b> {inus.map((v) => `${NOMBRE[v.ccaa]} en ${v.anio} (${v.pct > 0 ? "+" : "−"}${fmtNum(Math.abs(v.pct))} % sin inflación)`).join("; ")}.
                 Es un cambio grande respecto al año anterior, detectado con un criterio fijo; la cifra es oficial, pero la fuente no lo explica.
               </p>
             )}
@@ -617,31 +617,31 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
               {hijas.map((h) => (
                 <button key={h.id} className="ft-f" onClick={() => abrir(h.id)}>
                   <span className="ft-n"><Icono id={h.id} tam={16} />{h.nombre} <Marca id={h.id} /></span>
-                  {CCAA.map((c) => <span key={c} className="num">{fmt(hab(c, anio, h.id), "hab")}</span>)}
+                  {CCAA.map((c) => <span key={c} className="num">{fmt(importePartida(c, anio, h.id, u), u)}</span>)}
                 </button>
               ))}
             </div>
-            <p className="ayuda">€ por habitante. Pulsa en una política para ver su detalle.</p>
+            <p className="ayuda">{UNIDAD_TXT[u]}. Pulsa en una política para ver su detalle.</p>
           </>
         )}
 
         <h3>En qué se va el dinero</h3>
-        <p className="sub">€ por habitante, según el tipo de gasto (capítulos del presupuesto). Pulsa «?» para ver qué es cada uno. Cómo se organiza cada comunidad (personal propio, entes públicos o centros contratados) cambia en qué tipo aparece el gasto.</p>
+        <p className="sub">{UNIDAD_TXT[u]}, según el tipo de gasto (capítulos del presupuesto). Pulsa «?» para ver qué es cada uno. Cómo se organiza cada comunidad (personal propio, entes públicos o centros contratados) cambia en qué tipo aparece el gasto.</p>
         <Leyenda />
         <div className="barras">
           {filasCap.map((k) => (
-            <div className="bf" key={k.n} title={`${k.oficial}\n` + CCAA.map((c) => `${NOMBRE[c]}: ${fmt(caps[c][k.n - 1] / 1000, "mill")} (${fmtNum((caps[c][k.n - 1] / (sumaCaps(c) || 1)) * 100)} %)`).join("\n")}>
+            <div className="bf" key={k.n} title={`${k.oficial}\n` + CCAA.map((c) => `${NOMBRE[c]}: ${fmt(valorCap(c, k.n - 1), u)} (${fmtNum((caps[c][k.n - 1] / (sumaCaps(c) || 1)) * 100)} %)`).join("\n")}>
               <div className="bf-et">
                 <span className="con-info">{k.nombre}<button className="info" aria-expanded={!!info[k.n]} aria-label={`Qué es «${k.nombre}»`} onClick={() => verInfo(String(k.n))}>?</button></span>
                 {info[k.n] && <small className="bf-ayuda">{k.explica}{k.n === 4 && TRANSF_EJEMPLO[id] ? ` En esta política suele incluir, por ejemplo, ${TRANSF_EJEMPLO[id]}.` : ""}</small>}
               </div>
               <div className="bf-barras">
                 {CCAA.map((c) => {
-                  const x = capHab(c, k.n - 1);
+                  const x = valorCap(c, k.n - 1);
                   return (
                     <div className="bf-pista" key={c}>
                       <div className="bf-barra" style={{ width: `calc((100% - 84px) * ${maxCap > 0 ? Math.max(x, 0) / maxCap : 0})`, background: COLOR[c] }} />
-                      <span className="bf-v num">{fmt(x, "hab")}</span>
+                      <span className="bf-v num">{fmt(x, u)}</span>
                     </div>
                   );
                 })}
@@ -666,11 +666,11 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
             </div>
             <div className="bf-barras">
               {CCAA.map((c) => {
-                const x = (dep[c] * 1000) / poblacion(c, anio);
+                const x = enUnidad(dep[c], u, c, anio);
                 return (
                   <div className="bf-pista" key={c}>
                     <div className="bf-barra" style={{ width: `calc((100% - 84px) * ${maxCap > 0 ? x / maxCap : 0})`, background: "var(--grey-line)" }} />
-                    <span className="bf-v num">{fmt(x, "hab")}</span>
+                    <span className="bf-v num">{fmt(x, u)}</span>
                   </div>
                 );
               })}
@@ -679,7 +679,7 @@ function Ficha({ id, anio, abrir, cerrar, previa, volver }: { id: string; anio: 
         )}
         {(fuera.MD > 0 || fuera.CT > 0) && (
           <p className="ayuda">
-            No incluye operaciones financieras (préstamos concedidos y devolución de préstamos): {CCAA.map((c) => `${NOMBRE[c]} ${fmt(fuera[c] / 1000, "mill")}`).join(", ")}.
+            No incluye operaciones financieras (préstamos concedidos y devolución de préstamos): {CCAA.map((c) => `${NOMBRE[c]} ${fmt(enUnidad(fuera[c], u, c, anio), u)}`).join(", ")}.
           </p>
         )}
         <div className="ficha-pie">
@@ -724,7 +724,7 @@ export function App() {
   const enlace = (v: Vista) => hashDe({ ...estado, vista: v, ficha: null });
   const dep = CCAA.map((c) => ({ c, ifl: depuracionDe(c, anio, "94"), pac: depuracionDe(c, anio, "41") }));
   const conDep = dep.filter((x) => x.ifl + x.pac > 0), sinDep = dep.filter((x) => x.ifl + x.pac <= 0);
-  const totalHab = (c: Ccaa) => (resumen(c, anio).total * 1000) / poblacion(c, anio);
+  const total = (c: Ccaa) => enUnidad(resumen(c, anio).total, u, c, anio);
 
   return (
     <>
@@ -766,7 +766,7 @@ export function App() {
                 {sinDep.length ? ` En ${sinDep.map((x) => NOMBRE[x.c]).join(" y ")}, Hacienda registra el mismo importe antes y después de depurar IFL y PAC.` : ""}
                 {" "}Así las dos se comparan sin él.
               </li>
-              <li>Si se cuenta <b>todo el presupuesto</b>, con la devolución de préstamos y lo que solo se reparte: {CCAA.map((c) => `${NOMBRE[c]} ${fmt(totalHab(c), "hab")}`).join(" y ")} por habitante. La devolución se explica en <a href={enlace("ingresos")} onClick={(e) => { e.preventDefault(); ir("ingresos"); }}>Deuda</a>.</li>
+              <li>Si se cuenta <b>todo el presupuesto</b>, con la devolución de préstamos y lo que solo se reparte: {CCAA.map((c) => `${NOMBRE[c]} ${fmt(total(c), u)}`).join(" y ")}{u === "hab" && " por habitante"}. La devolución se explica en <a href={enlace("ingresos")} onClick={(e) => { e.preventDefault(); ir("ingresos"); }}>Deuda</a>.</li>
               <li>Por habitante: población a 1 de julio del INE. <a href={enlace("metodo")} onClick={(e) => { e.preventDefault(); ir("metodo"); }}>Más detalle</a>.</li>
             </ul>
           </div>
@@ -774,8 +774,8 @@ export function App() {
 
         <Contraste anio={anio} u={u} />
         <DeCada100 anio={anio} abrir={abrir} />
-        <Titulares anio={anio} abrir={abrir} />
-        <Destacadas anio={anio} abrir={abrir} />
+        <Titulares anio={anio} u={u} abrir={abrir} />
+        <Destacadas anio={anio} u={u} abrir={abrir} />
         <Siguiente />
         </>}
 
@@ -809,7 +809,7 @@ export function App() {
           <Puente anio={anio} u={u} abrir={abrir} verDeuda={() => { cambiar({ vista: "ingresos" }); setTimeout(() => document.getElementById("deuda")?.scrollIntoView(), 50); }} />
         </section>
 
-        <Cambios abrir={abrir} />
+        <Cambios abrir={abrir} u={u} />
 
         <section className="panel">
           <h2>Todas las partidas</h2>
@@ -824,7 +824,7 @@ export function App() {
         <PorQue a={A} b={B} anio={anio} />
         <Ingresos anio={anio} u={u} />
         <Deuda anio={anio} u={u} />
-        <Evolucion anio={anio} />
+        <Evolucion anio={anio} u={u} />
         <Siguiente />
         </>}
 
@@ -845,7 +845,7 @@ export function App() {
         </footer>
       </main>
       {estado.ficha && (
-        <Ficha key={estado.ficha} id={estado.ficha} anio={anio} abrir={abrir} cerrar={cerrarFicha}
+        <Ficha key={estado.ficha} id={estado.ficha} anio={anio} u={u} abrir={abrir} cerrar={cerrarFicha}
           previa={previaId ? partida(previaId) : undefined} volver={volverFicha} />
       )}
     </>

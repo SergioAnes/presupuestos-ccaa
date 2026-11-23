@@ -2,24 +2,23 @@
 
 import { Fragment, useState } from "react";
 import {
-  ANIOS, AREAS, CCAA, COLOR_CCAA, INUSUAL, INUSUALES, IPC, IPC_FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, habPartida, inusualesEn,
-  type Ccaa, type Partida,
+  ANIOS, AREAS, CCAA, COLOR_CCAA, INUSUAL, INUSUALES, IPC, IPC_FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT, fmt, fmtDif, habPartida, importePartida, inusualesEn,
+  type Ccaa, type Partida, type Unidad,
 } from "@/lib/datos";
 import { Icono } from "./Icono";
 
-/** «Cómo ha cambiado»: variación del gasto por habitante de cada política entre dos años, en euros corrientes o constantes. */
+/** «Cómo ha cambiado»: variación del gasto de cada política entre dos años, en euros corrientes o constantes. */
 
 const COLOR = COLOR_CCAA;
 const nf = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0, useGrouping: "always" } as Intl.NumberFormatOptions);
 const nf1 = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 const signo = (v: number) => (v > 0 ? "+" : v < 0 ? "−" : "");
 const eur = (v: number) => `${nf.format(v)} €`;
-const dEur = (v: number) => (Math.abs(v) < 0.05 ? "0 €" : `${signo(v)}${Math.abs(v) < 9.95 ? nf1.format(Math.abs(v)) : nf.format(Math.abs(v))} €`);
 const dPct = (v: number) => (Math.abs(v) < 0.5 ? "0 %" : `${signo(v)}${nf.format(Math.abs(v))} %`);
 
 type Orden = "partidas" | Ccaa;
 
-export function Cambios({ abrir }: { abrir: (id: string) => void }) {
+export function Cambios({ abrir, u }: { u: Unidad; abrir: (id: string) => void }) {
   const ult = ANIOS[ANIOS.length - 1];
   const periodos: [number, number][] = [];
   for (let i = 0; i < ANIOS.length; i++) for (let j = ANIOS.length - 1; j > i; j--) periodos.push([ANIOS[i], ANIOS[j]]);
@@ -30,10 +29,10 @@ export function Cambios({ abrir }: { abrir: (id: string) => void }) {
   if (ANIOS.length < 2) return null;
   const [y0, y1] = per;
   const ref = real ? ult : undefined;
-  const v = (c: Ccaa, y: number, id: string) => habPartida(c, y, id, ref);
+  const v = (c: Ccaa, y: number, id: string) => importePartida(c, y, id, u, ref);
   const cambio = (c: Ccaa, id: string) => {
     const a = v(c, y0, id), b = v(c, y1, id);
-    return { a, b, d: b - a, p: a >= MIN_HAB_PCT ? (b / a - 1) * 100 : NaN };
+    return { a, b, d: b - a, p: habPartida(c, y0, id, ref) >= MIN_HAB_PCT ? (b / a - 1) * 100 : NaN };
   };
   const filas: { p: Partida; nivel: 0 | 1 }[] = [];
   if (orden === "partidas") {
@@ -53,15 +52,15 @@ export function Cambios({ abrir }: { abrir: (id: string) => void }) {
     const inus = id === "T" ? [] : inusualesEn(c, id, y0, y1);
     const ancho = Math.min(50, (Math.abs(r.d) / maxD) * 50);
     return (
-      <td className={`cb-c${fuerte ? " fuerte" : ""}`} title={`${NOMBRE[c]}: ${eur(r.a)} en ${y0} → ${eur(r.b)} en ${y1}`}>
+      <td className={`cb-c${fuerte ? " fuerte" : ""}`} title={`${NOMBRE[c]}: ${fmt(r.a, u)} en ${y0} → ${fmt(r.b, u)} en ${y1}`}>
         <div className="cb-celda">
           <span className="cb-pista">
             <span className="cb-eje" />
             <span className="cb-barra" style={{ left: r.d >= 0 ? "50%" : `${50 - ancho}%`, width: `max(2px, ${ancho}%)`, background: COLOR[c] }} />
           </span>
           <span className="cb-v num">
-            {inus.length > 0 && <span className="cb-inus" title={`Variación inusual: ${inus.map((v) => `${v.anio} ${dPct(v.pct)}`).join(", ")}`}>!</span>}
-            {dEur(r.d)} <small>{isNaN(r.p) ? "" : `(${dPct(r.p)})`}</small>
+            {inus.length > 0 && <span className="cb-inus" title={`Variación inusual por habitante, sin inflación: ${inus.map((v) => `${v.anio} ${dPct(v.pct)}`).join(", ")}`}>!</span>}
+            {Math.abs(r.d) < 0.05 ? fmt(0, u) : fmtDif(r.d, u)} <small>{isNaN(r.p) ? "" : `(${dPct(r.p)})`}</small>
           </span>
         </div>
       </td>
@@ -71,7 +70,7 @@ export function Cambios({ abrir }: { abrir: (id: string) => void }) {
   return (
     <section className="panel" id="cambios">
       <h2>Cómo ha cambiado</h2>
-      <p className="sub">Variación del gasto por habitante de cada política entre dos años{real ? `, en euros de ${ult} (descontada la inflación)` : ", en euros de cada año"}.</p>
+      <p className="sub">Variación del gasto de cada política entre dos años ({UNIDAD_TXT[u]}){real ? `, en euros de ${ult} (descontada la inflación)` : ", en euros de cada año"}.</p>
       <div className="cb-controles">
         <div className="seg sm" role="group" aria-label="Periodo">
           {periodos.map(([a, b]) => <button key={`${a}-${b}`} aria-pressed={a === y0 && b === y1} onClick={() => setPer([a, b])}>{a} → {b}</button>)}
@@ -83,7 +82,7 @@ export function Cambios({ abrir }: { abrir: (id: string) => void }) {
       </div>
       <div className="cb-resumen">
         {CCAA.map((c) => (
-          <p key={c}><i style={{ background: COLOR[c] }} /><b>{NOMBRE[c]}</b>: {eur(tot[c].a)} → {eur(tot[c].b)} por habitante, <b>{dEur(tot[c].d)} ({dPct(tot[c].p)})</b></p>
+          <p key={c}><i style={{ background: COLOR[c] }} /><b>{NOMBRE[c]}</b>: {fmt(tot[c].a, u)} → {fmt(tot[c].b, u)}{u === "hab" && " por habitante"}, <b>{fmtDif(tot[c].d, u)} ({dPct(tot[c].p)})</b></p>
         ))}
         <p className="ayuda">
           {real
@@ -151,10 +150,10 @@ export function Cambios({ abrir }: { abrir: (id: string) => void }) {
 }
 
 /** Gráfico pequeño de la evolución de una partida en la ficha (euros de cada año). */
-export function MiniEvolucion({ id }: { id: string }) {
+export function MiniEvolucion({ id, u }: { id: string; u: Unidad }) {
   if (ANIOS.length < 2) return null;
-  const s = Object.fromEntries(CCAA.map((c) => [c, ANIOS.map((y) => habPartida(c, y, id))])) as Record<Ccaa, number[]>;
-  const W = 560, H = 130, L = 10, R = 74, T = 12, B = 22;
+  const s = Object.fromEntries(CCAA.map((c) => [c, ANIOS.map((y) => importePartida(c, y, id, u))])) as Record<Ccaa, number[]>;
+  const W = 560, H = 130, L = 10, R = u === "mill" ? 84 : 74, T = 12, B = 22;
   const max = Math.max(...s.MD, ...s.CT) || 1;
   const x = (i: number) => L + (i / (ANIOS.length - 1)) * (W - L - R);
   const y = (v: number) => T + (1 - v / max) * (H - T - B);
@@ -164,7 +163,7 @@ export function MiniEvolucion({ id }: { id: string }) {
   if (Math.abs(yEt[c1] - yEt[c2]) < 14) { const m = (yEt[c1] + yEt[c2]) / 2, arr = yEt[c1] <= yEt[c2] ? -1 : 1; yEt[c1] = m + arr * 7; yEt[c2] = m - arr * 7; }
   return (
     <div className="mini-evo">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Evolución ${ANIOS[0]}-${ANIOS[ANIOS.length - 1]}: ` + CCAA.map((c) => `${NOMBRE[c]} ${s[c].map((v) => eur(v)).join(", ")}`).join("; ")}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Evolución en ${UNIDAD_TXT[u]}, ${ANIOS[0]}-${ANIOS[ANIOS.length - 1]}: ` + CCAA.map((c) => `${NOMBRE[c]} ${s[c].map((v) => fmt(v, u)).join(", ")}`).join("; ")}>
         <line x1={L} x2={W - R} y1={H - B} y2={H - B} stroke="var(--line)" />
         {ANIOS.map((a, i) => <text key={a} x={x(i)} y={H - 6} textAnchor="middle" fontSize="11" fill="var(--muted)">{a}</text>)}
         {CCAA.map((c) => (
@@ -175,11 +174,11 @@ export function MiniEvolucion({ id }: { id: string }) {
               return (
                 <g key={i}>
                   {inus && <circle cx={x(i)} cy={y(v)} r="8" fill="none" stroke="var(--note)" strokeWidth="2" />}
-                  <circle cx={x(i)} cy={y(v)} r="3.5" fill={COLOR[c]} stroke="var(--surface)" strokeWidth="1.5"><title>{`${NOMBRE[c]} ${ANIOS[i]}: ${eur(v)}${inus ? " · variación inusual" : ""}`}</title></circle>
+                  <circle cx={x(i)} cy={y(v)} r="3.5" fill={COLOR[c]} stroke="var(--surface)" strokeWidth="1.5"><title>{`${NOMBRE[c]} ${ANIOS[i]}: ${fmt(v, u)}${inus ? " · variación inusual por habitante, sin inflación" : ""}`}</title></circle>
                 </g>
               );
             })}
-            <text x={x(n) + 8} y={yEt[c] + 4} fontSize="11.5" fontWeight="700" fill="var(--fg)">{eur(s[c][s[c].length - 1])}</text>
+            <text x={x(n) + 8} y={yEt[c] + 4} fontSize="11.5" fontWeight="700" fill="var(--fg)">{fmt(s[c][n], u)}</text>
           </g>
         ))}
       </svg>
