@@ -2,11 +2,12 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
-  ANIOS, AREAS, CAPITULOS, CCAA, COLOR_CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, TRANSF_EJEMPLO, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
+  ANIOS, AREAS, CAPITULOS, CCAA, COLOR_CCAA, COMPETENCIA_DISTINTA, DESTACA, ENTIDADES, QUE_INCLUYE, compararImportes, FUENTE, MIN_HAB_PCT, NOMBRE, POLITICAS, UNIDAD_TXT,
   DEUDA, IFL_NOTA, capitulosMiles, csv, depuracionDe, depuracionPorCapitulo, inusualesEn, notasCompetencia, sfa, singularesDe, enUnidad, fmt, fmtDif, fmtNum, fmtPct, gastoMiles, importePartida, partida, poblacion, resumen,
   type Ccaa, type Partida, type Unidad,
 } from "@/lib/datos";
 import { Icono } from "./Icono";
+import { ayudaCapitulo } from "@/lib/ayudaCapitulo";
 import { Deuda, Evolucion, Ingresos } from "./Dinero";
 import { Contraste, Funciones } from "./Cuentas";
 import { PorQue } from "./PorQue";
@@ -355,7 +356,7 @@ function Puente({ anio, u, abrir, verDeuda }: { anio: number; u: Unidad; abrir: 
   const pasos: { id: string; p?: Partida; nombre: string; d: number; nota?: string; extra?: boolean }[] = [];
   const millHab = (c: Ccaa) => new Intl.NumberFormat("es-ES", { maximumFractionDigits: 2 }).format(poblacion(c, anio) / 1e6);
   if (un === "mill") pasos.push({ id: "pob", nombre: `Si ${NOMBRE[A]} tuviera los habitantes de ${NOMBRE[B]}`, d: tot(A) * (ratio - 1), nota: `${fmt(tot(A), "mill")} × ${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(ratio)} (${millHab(B)} ÷ ${millHab(A)} millones de habitantes) = ${fmt(tot(A) * ratio, "mill")}` });
-  const difs = POLITICAS.map((p) => ({ id: p.id, p, nombre: p.nombre, d: val(B, p.id) - (un === "mill" ? val(A, p.id) * ratio : val(A, p.id)) }));
+  const difs = POLITICAS.map((p) => ({ id: p.id, p, nombre: p.nombre, d: compararImportes(val(A, p.id), val(B, p.id), un === "mill" ? ratio : 1).ajustada }));
   difs.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
   const N = 9;
   const resto = difs.slice(N);
@@ -524,6 +525,9 @@ function Fuera({ anio }: { anio: number }) {
 }
 
 // ---------- ficha de una política o área ----------
+const decimalesDetalle = new Intl.NumberFormat("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: "always" } as Intl.NumberFormatOptions);
+const millonesDetalle = (v: number) => `${decimalesDetalle.format(v)} M€`;
+
 function Ficha({ id, anio, u, abrir, cerrar, previa, volver }: { id: string; anio: number; u: Unidad; abrir: Abrir; cerrar: () => void; previa?: Partida; volver: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   // El evento «close» del <dialog> (×, «Cerrar», Esc, clic fuera) se escucha directamente: React no siempre lo pasa
@@ -558,6 +562,8 @@ function Ficha({ id, anio, u, abrir, cerrar, previa, volver }: { id: string; ani
   const inus = CCAA.flatMap((c) => inusualesEn(c, id, ANIOS[0], ANIOS[ANIOS.length - 1]));
   const hijas = id.length === 1 ? POLITICAS.filter((x) => x.area === id) : [];
   const madre = id.length === 2 ? partida(id[0]) : undefined;
+  const importeA = importePartida(A, anio, id, "mill"), importeB = importePartida(B, anio, id, "mill");
+  const diferencia = compararImportes(importeA, importeB, poblacion(B, anio) / poblacion(A, anio));
   return (
     <dialog ref={ref} className="ficha" onClick={(e) => { if (e.target === ref.current) cerrarYa(); }}>
       <div className="ficha-c" tabIndex={-1}>
@@ -588,6 +594,13 @@ function Ficha({ id, anio, u, abrir, cerrar, previa, volver }: { id: string; ani
             </div>
           ))}
         </div>
+
+        {u === "mill" && (
+          <div className="incluye-f">
+            <p><b>Diferencia entre los importes de la ficha.</b> {NOMBRE[B]} menos {NOMBRE[A]} da {millonesDetalle(diferencia.directa)}. Las tarjetas muestran cifras redondeadas.</p>
+            <p><b>Diferencia a igual población.</b> Si {NOMBRE[A]} tuviera la población de {NOMBRE[B]} y mantuviera su gasto por habitante en esta partida, pasaría de {millonesDetalle(importeA)} a {millonesDetalle(diferencia.baseAjustada)}. Al restar esa estimación de los {millonesDetalle(importeB)} de {NOMBRE[B]}, quedan {millonesDetalle(diferencia.ajustada)}. El gráfico «Dónde está la diferencia» usa esta segunda comparación.</p>
+          </div>
+        )}
 
         {ANIOS.length > 1 && (
           <>
@@ -632,8 +645,8 @@ function Ficha({ id, anio, u, abrir, cerrar, previa, volver }: { id: string; ani
           {filasCap.map((k) => (
             <div className="bf" key={k.n} title={`${k.oficial}\n` + CCAA.map((c) => `${NOMBRE[c]}: ${fmt(valorCap(c, k.n - 1), u)} (${fmtNum((caps[c][k.n - 1] / (sumaCaps(c) || 1)) * 100)} %)`).join("\n")}>
               <div className="bf-et">
-                <span className="con-info">{k.nombre}<button className="info" aria-expanded={!!info[k.n]} aria-label={`Qué es «${k.nombre}»`} onClick={() => verInfo(String(k.n))}>?</button></span>
-                {info[k.n] && <small className="bf-ayuda">{k.explica}{k.n === 4 && TRANSF_EJEMPLO[id] ? ` En esta política suele incluir, por ejemplo, ${TRANSF_EJEMPLO[id]}.` : ""}</small>}
+                <span className="con-info">{k.nombre}<button className="info" aria-expanded={!!info[k.n]} aria-label={`Qué es «${k.nombre}» en ${p.nombre}`} onClick={() => verInfo(String(k.n))}>?</button></span>
+                {info[k.n] && <small className="bf-ayuda">{ayudaCapitulo(p, k, anio)}</small>}
               </div>
               <div className="bf-barras">
                 {CCAA.map((c) => {
@@ -803,7 +816,7 @@ export function App() {
           <h2>Dónde está la diferencia</h2>
           <p className="sub">
             {u === "mill"
-              ? `Millones de €, ${anio}. Del gasto de ${NOMBRE[A]} al de ${NOMBRE[B]}: primero, lo que supone la diferencia de habitantes; después, cada política comparada con ${NOMBRE[A]} escalada a la población de ${NOMBRE[B]} (× ${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(poblacion(B, anio) / poblacion(A, anio))}).`
+              ? `Millones de €, ${anio}. La primera barra gris recoge la diferencia de población. Después, cada política compara lo que gastó ${NOMBRE[B]} con lo que habría gastado ${NOMBRE[A]} si tuviera tantos habitantes como ${NOMBRE[B]} y mantuviera su gasto por persona. Pulsa una política para ver también la diferencia entre sus importes reales.`
               : `Euros por habitante, ${anio}. Del gasto de ${NOMBRE[A]} al de ${NOMBRE[B]}, sumando la diferencia de cada política.`}
           </p>
           <Puente anio={anio} u={u} abrir={abrir} verDeuda={() => { cambiar({ vista: "ingresos" }); setTimeout(() => document.getElementById("deuda")?.scrollIntoView(), 50); }} />
